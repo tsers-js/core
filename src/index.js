@@ -9,11 +9,12 @@ const fromKey = signal$ => key =>
 const mergeObj = (output, local = false) =>
   O.merge(keys(output).map(key => output[key].map(val => ({val, key, local}))))
 
-export const signals = signal$ => ({
+const signals = signal$ => ({
   of: fromKey(signal$),
   ofKeys: (...keys) => keys.reduce((o, k) => ({...o, [k]: fromKey(signal$)(k)}), {})
 })
 
+// drivers :: {A: () -> {s$, t, e}} -> {s$, t: {A: [t]}, e: {A: [e]}}
 export const drivers = spec => {
   const compact = (obj, fn) =>
     keys(obj).reduce((o, k) => { let a = fn(obj[k]); return a ? ({...o, [k]: a}) : o}, {})
@@ -26,6 +27,7 @@ export const drivers = spec => {
   }
 }
 
+// run :: s$ -> (s$ -> {s$, o$}) -> o$
 export const run = (signal$, main) => {
   let loop = null
   const input$ = signal$
@@ -46,13 +48,15 @@ export const run = (signal$, main) => {
   return signals(output$).ofKeys(...keys(res.out))
 }
 
-export const interpret = (effect, executors) => {
-  return new Rx.CompositeDisposable(...keys(effect).map(key =>
-    executors[key] ? executors[key](effect[key]) : { dispose() {} }
+// execute :: {A: o$} -> {A: o$ -> dispose} -> dispose
+export const execute = (output, executors) => {
+  return new Rx.CompositeDisposable(...keys(output).map(key =>
+    executors[key] ? executors[key](output[key]) : { dispose() {} }
   ))
 }
 
-export default (main, spec) => {
+// for concise
+export default (spec, main) => {
   const {signals: s, transforms: t, executors: e} = drivers(spec)
   return interpret(run(s, main(t)), e)
 }

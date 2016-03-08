@@ -1,6 +1,6 @@
 import should from "should"
 import {Observable as O} from "rx"
-import {drivers, run, interpret} from "../src/index"
+import {drivers, run, execute} from "../src/index"
 
 
 describe("TSERS core", () => {
