@@ -7,4 +7,5 @@ before_script:
 script:
   - nyc npm test
 after_success:
-  - cat ./nyc_output/* | codecov
+  - nyc report --reporter=lcov
+  - codecov
