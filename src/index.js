@@ -60,5 +60,5 @@ export const execute = (executors, output) => {
 // for concise
 export default (spec, main) => {
   const {signals: s, transforms: t, executors: e} = drivers(spec)
-  return interpret(run(s, main(t)), e)
+  return execute(e, run(s, main(t)))
 }

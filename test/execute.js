@@ -21,7 +21,7 @@ describe("execute()", () => {
         msg.should.equal("tsers?")
         s.onNext()
       })),
-      C: tsersDriver(out$ => {})
+      C: tsersDriver(() => {})
     })
 
     s.bufferWithCount(2).subscribe(() => done())
@@ -45,7 +45,7 @@ describe("execute()", () => {
         s.onNext(msg)
         if (d) { d.dispose(); d = null }
       }), input$),
-      noop: tsersDriver(out$ => {})
+      noop: tsersDriver(() => {})
     })
     s.bufferWithTime(200).subscribe(msgs => {
       msgs.should.deepEqual(["tsers!"])
