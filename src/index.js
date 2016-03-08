@@ -36,7 +36,7 @@ export const run = (signal$, main) => {
     .share()
 
   const res = main(signals(input$))
-  const all$ = mergeObj({in: mergeObj(res.in, true), out: mergeObj(res.out)})
+  const all$ = mergeObj({loop: mergeObj(res.in || {}, true), out: mergeObj(res.out || {})})
 
   const output$ = O.create(out => {
     return all$.subscribe(
@@ -45,13 +45,15 @@ export const run = (signal$, main) => {
       () => out.onCompleted()
     )
   })
-  return signals(output$).ofKeys(...keys(res.out))
+  return signals(output$).ofKeys(...keys(res.out || {}))
 }
 
-// execute :: {A: o$} -> {A: o$ -> dispose} -> dispose
-export const execute = (output, executors) => {
+const noopDispose = { dispose() {} }
+
+// execute :: {A: o$ -> dispose} -> {A: o$} -> dispose
+export const execute = (executors, output) => {
   return new Rx.CompositeDisposable(...keys(output).map(key =>
-    executors[key] ? executors[key](output[key]) : { dispose() {} }
+    executors[key] ? executors[key](output[key]) || noopDispose : noopDispose
   ))
 }
 
