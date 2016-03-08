@@ -2,3 +2,9 @@ language: node_js
 node_js:
   - "4.2.0"
   - "5.5.0"
+before_script:
+  - npm install -g codecov nyc
+script:
+  - nyc npm test
+after_success:
+  - cat ./nyc_output/* | codecov

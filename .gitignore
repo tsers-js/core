@@ -9,3 +9,6 @@ node_modules
 npm-debug.log*
 
 dist/*
+
+coverage/*
+.nyc_output/*
