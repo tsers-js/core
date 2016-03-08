@@ -8,7 +8,7 @@ node_modules
 *.log
 npm-debug.log*
 
-dist/*
+dist
 
-coverage/*
-.nyc_output/*
+coverage
+.nyc_output
