@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "test": "npm run mocha -- --recursive 'test/*'",
-    "mocha": "mocha --compilers js:babel-register",
+    "mocha": "mocha --compilers js:babel-register -s 150",
     "build": "mkdir -p dist && rm dist/* && babel src/index.js > dist/tsers.core.js"
   },
   "dependencies": {
