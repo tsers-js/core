@@ -1,6 +1,7 @@
 {
   "name": "@tsers/core",
   "version": "0.1.0",
+  "private": false,
   "description": "tsers",
   "main": "dist/tsers.core.js",
   "author": "Matti Lankinen <m.lankinen@iki.fi> (https://github.com/milankinen)",
@@ -20,8 +21,8 @@
     "mocha:all": "npm run mocha -- --recursive test",
     "mocha": "mocha --compilers js:babel-register -s 500",
     "dist": "npm run build && npm run minify",
-    "build": "mkdir -p dist && rm dist/* && babel src/index.js > dist/tsers.core.js",
-    "minify": "uglify -s dist/tsers.core.js -o dist/tsers.core.min.js"
+    "build": "mkdir -p dist && rm -f dist/* && babel src/index.js > dist/tsers.core.js",
+    "minify": "uglifyjs -c -m -- dist/tsers.core.js > dist/tsers.core.min.js"
   },
   "peerDependencies": {
     "rx": "4.x"
@@ -37,6 +38,6 @@
     "mocha": "^2.4.5",
     "rx": "^4.1.0",
     "should": "^8.2.2",
-    "uglify": "^0.1.5"
+    "uglify-js": "^2.6.2"
   }
 }
