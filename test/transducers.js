@@ -44,6 +44,12 @@ describe("common transducers", () => {
       out$.should.be.instanceof(O)
       setTimeout(done, 10)
     })
+    it("allows returning only output stream", done => {
+      const [{loop}, S, _] = TSERS({A: tsersDriver})
+      const out$ = loop(S, in$ => in$)
+      out$.should.be.instanceof(O)
+      out$.subscribe(() => done())
+    })
     it("allows looping signals back to input", done => {
       const [{loop, from, to, compose, decompose}, S, _] = TSERS({A: tsersDriver})
 

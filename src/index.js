@@ -5,6 +5,8 @@ const objKeys = x =>
 
 const isObj = x => typeof x === "object" && x.constructor === Object
 
+const isArray = x => x && Array.isArray(x)
+
 const noop = () => {
 }
 
@@ -45,7 +47,9 @@ function TSERS(drivers) {
       .merge(O.create(o => (lo = o) && (() => lo = null)))
       .share()
 
-    const [out$, looped$] = main(loop$)
+    const res = main(loop$)
+    const out$ = isArray(res) ? res[0] : res
+    const looped$ = isArray(res) ? res[1] : undefined
     const all$ = compose({lo: looped$ || O.never(), out: out$ || O.never()})
 
     return O.create(out => {
