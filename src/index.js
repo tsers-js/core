@@ -45,7 +45,7 @@ function TSERS(drivers) {
       .merge(O.create(o => (lo = o) && (() => lo = null)))
       .share()
 
-    const [looped$, out$] = main(loop$)
+    const [out$, looped$] = main(loop$)
     const all$ = compose({lo: looped$ || O.never(), out: out$ || O.never()})
 
     return O.create(out => {
