@@ -3,7 +3,8 @@
   "extends": "eslint:recommended",
   "rules": {
     "strict": 0,
-    "quotes": [2, "double"]
+    "quotes": [2, "double"],
+    "no-unused-vars": [2, {"varsIgnorePattern": "_+"}]
   },
   "env": {
     "node": true,
