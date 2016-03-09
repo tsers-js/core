@@ -12,7 +12,7 @@ describe("execute()", () => {
 
   it("executes the output signals by driver name and discards additional signals", done => {
     const s = new Rx.Subject()
-    const {signals, executors} = drivers({
+    const {signals, transducers: {signal: {fromKey}}, executors} = drivers({
       A: tsersDriver(out$ => out$.subscribe(msg => {
         msg.should.equal("tsers!")
         s.onNext()
@@ -25,11 +25,11 @@ describe("execute()", () => {
     })
 
     s.bufferWithCount(2).subscribe(() => done())
-    execute(executors, run(signals, s => ({
+    execute(executors, run(signals, in$ => ({
       out: {
-        A: s.of("A").map(t => t + "!"),
-        B: s.of("B").map(t => t + "?"),
-        D: s.of("D").map(t => t + "%")
+        A: fromKey(in$, "A").map(t => t + "!"),
+        B: fromKey(in$, "B").map(t => t + "?"),
+        D: fromKey(in$, "D").map(t => t + "%")
       }
     })))
   })
@@ -40,7 +40,7 @@ describe("execute()", () => {
       .merge(O.just("tsers?").delay(5))
 
     let d
-    const {signals, executors} = drivers({
+    const {signals, transducers: {signal: {fromKey}}, executors} = drivers({
       tsers: tsersDriver(out$ => out$.subscribe(msg => {
         s.onNext(msg)
         if (d) { d.dispose(); d = null }
@@ -51,8 +51,8 @@ describe("execute()", () => {
       msgs.should.deepEqual(["tsers!"])
       done()
     })
-    d = execute(executors, run(signals, s => ({
-      out: { tsers: s.of("tsers") }
+    d = execute(executors, run(signals, in$ => ({
+      out: { tsers: fromKey(in$, "tsers") }
     })))
   })
 

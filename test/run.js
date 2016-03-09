@@ -10,27 +10,27 @@ const tsersDriver = () => ({
 describe("run()", () => {
 
   it("is lazy", done => {
-    const {signals} = drivers({tsers: tsersDriver})
-    const out = run(signals, signals => ({
-      in: {
-        t: signals.of("tsers").do(done.fail)
+    const {signals, transducers: {signal: {fromKey}}} = drivers({tsers: tsersDriver})
+    const out = run(signals, in$ => ({
+      loop: {
+        t: fromKey(in$, "tsers").do(done.fail)
       },
       out: {
-        msg: signals.of("t")
+        msg: fromKey(in$, "t")
       }
     }))
     out.msg.should.be.instanceof(O)
     setTimeout(done, 10)
   })
 
-  it("loops 'in' signals back to input and 'out' outside the system", done => {
-    const {signals} = drivers({tsers: tsersDriver})
-    const out = run(signals, signals => ({
-      in: {
-        t: signals.of("tsers").map(t => t + "!")
+  it("loops 'loop' signals back to input and 'out' outside the system", done => {
+    const {signals, transducers: {signal: {fromKey}}} = drivers({tsers: tsersDriver})
+    const out = run(signals, in$ => ({
+      loop: {
+        t: fromKey(in$, "tsers").map(t => t + "!")
       },
       out: {
-        msg: signals.of("t").map(t => t + "!")
+        msg: fromKey(in$, "t").map(t => t + "!")
       }
     }))
     out.msg.subscribe(t => {
@@ -40,13 +40,13 @@ describe("run()", () => {
   })
 
   it("disposes the signal loop if the output stream is disposed", done => {
-    const {signals} = drivers({tsers: tsersDriver})
-    const out = run(signals, signals => ({
-      in: {
-        t: signals.of("tsers").delay(5).do(done.fail).merge(signals.of("tsers"))
+    const {signals, transducers: {signal: {fromKey}}} = drivers({tsers: tsersDriver})
+    const out = run(signals, in$ => ({
+      loop: {
+        t: fromKey(in$, "tsers").delay(5).do(done.fail).merge(fromKey(in$, "tsers"))
       },
       out: {
-        msg: signals.of("t")
+        msg: fromKey(in$, "t")
       }
     }))
     const d = out.msg.subscribe(() => {
