@@ -41,6 +41,7 @@ function TSERS(drivers) {
     let lo = null
     const loop$ = in$
       .filter(s => s.ext)
+      .doOnCompleted(() => lo && lo.onCompleted() && (lo = null))
       .merge(O.create(o => (lo = o) && (() => lo = null)))
       .share()
 
