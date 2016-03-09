@@ -1,6 +1,6 @@
 # TSERS
 
-**T**ransform-**S**ignal-**E**xecutor architecture for **R**eactive **S**treams.
+**T**ransducer-**S**ignal-**E**xecutor system for **R**eactive **S**treams.
 
 [![Travis Build](https://img.shields.io/travis/tsers-js/core/master.svg?style=flat-square)](https://travis-ci.org/tsers-js/core)
 [![Code Coverage](https://img.shields.io/codecov/c/github/tsers-js/core/master.svg?style=flat-square)](https://codecov.io/github/tsers-js/core)
