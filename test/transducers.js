@@ -94,4 +94,89 @@ describe("common transducers", () => {
     })
   })
 
+  describe("lift(val$$, ...keys)", () => {
+    it("switches to the latest input and decomposes it by using the given keys", done => {
+      const [{lift}, _, __] = TSERS({A: tsersDriver})
+      const streams = {
+        foo: O.of({key: "A", val: "a1"}, {key: "B", val: "b1"}).merge(O.of({key: "A", val: "a11"}).delay(10)),
+        bar: O.of({key: "A", val: "a2"})
+      }
+      const in$ = O.of("foo").merge(O.of("bar").delay(1))
+      const [res] = lift(in$.map(s => streams[s]), "A", "B")
+      res.A.should.be.instanceof(O)
+      res.B.should.be.instanceof(O)
+      res.A.bufferWithTime(100).first().subscribe(x => {
+        x.should.deepEqual(["a1", "a2"])
+        done()
+      })
+    })
+    it("returns the rest of output as a second parameter stream", done => {
+      const [{lift}] = TSERS({A: tsersDriver})
+      const streams = {
+        foo: O.of({key: "A", val: "a1"}, {key: "B", val: "b1"}).merge(O.of({key: "A", val: "a11"}).delay(1)),
+        bar: O.of({key: "A", val: "a2"})
+      }
+      const in$ = O.of("foo").merge(O.of("bar").delay(1))
+      const [_, rest$] = lift(in$.map(s => streams[s]), "A")
+      rest$.should.be.instanceof(O)
+      rest$.bufferWithTime(100).first().subscribe(x => {
+        x.should.deepEqual([{key: "B", val: "b1"}])
+        done()
+      })
+    })
+  })
+
+  describe("liftArray(arr$, val => res$, ...keys)", () => {
+    it("switches decomposes and combines array values by using given keys", done => {
+      const [{liftArray}] = TSERS({A: tsersDriver})
+      let n = 0
+      const sBy = val =>
+        O.of({key: "A", val: "a" + n + val}, {key: "B", val: "b" + n + val})
+
+      const in$ = O.create(o => setTimeout(() => {
+        n++
+        o.onNext([4, 1, 5])
+        setTimeout(() => {
+          n++
+          o.onNext([2, 5, 3])
+        }, 0)
+      }, 0))
+
+      const [res, _] = liftArray(in$, sBy, "A")
+      res.A.should.be.instanceof(O)
+      res.A.bufferWithTime(100).first().subscribe(x => {
+        x.should.deepEqual([["a14", "a11", "a15"], ["a22", "a25", "a23"]])
+        done()
+      })
+    })
+    it("returns the rest of output as a second parameter stream", done => {
+      const [{liftArray}] = TSERS({A: tsersDriver})
+      let n = 0
+      const sBy = val =>
+        O.of({key: "A", val: "a" + n + val}, {key: "B", val: "b" + n + val})
+
+      const in$ = O.create(o => {
+        n++
+        o.onNext([4, 1, 5])
+        setTimeout(() => {
+          n++
+          o.onNext([2, 5, 3])
+        }, 0)
+      })
+
+      const [_, rest$] = liftArray(in$, sBy, "A")
+      rest$.should.be.instanceof(O)
+      rest$.bufferWithTime(100).first().subscribe(x => {
+        x.should.deepEqual([
+          {key: "B", val: "b14"},
+          {key: "B", val: "b11"},
+          {key: "B", val: "b15"},
+          {key: "B", val: "b22"},
+          {key: "B", val: "b25"},
+          {key: "B", val: "b23"}
+        ])
+        done()
+      })
+    })
+  })
 })
