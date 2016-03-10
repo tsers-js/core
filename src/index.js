@@ -7,8 +7,18 @@ const isObj = x => typeof x === "object" && x.constructor === Object
 
 const isArray = x => x && Array.isArray(x)
 
-const noop = () => {
+const noop = () => undefined
+
+const keyNotIn = keys => {
+  const hash = keys.reduce((acc, k) => ({...acc, [k]: true}), {})
+  return s => !hash[s.key]
 }
+
+const from = (in$, key) =>
+  in$.filter(s => s.key === key).map(s => s.val)
+
+const to = (out$, key, ext) =>
+  out$.map(val => ({key, val, ext}))
 
 const mapValuesWhen = (obj, fn) =>
   objKeys(obj).reduce((o, k) => {
@@ -18,28 +28,40 @@ const mapValuesWhen = (obj, fn) =>
 
 
 function TSERS(drivers) {
-  if (!isObj(drivers)) throw new Error("Drivers must be an object of initializer functions")
-  const driverKeys = objKeys(drivers)
-  if (driverKeys.length === 0) throw new Error("At least one driver is required")
+  if (!isObj(drivers) || objKeys(drivers).length === 0)
+    throw new Error("Drivers must be an object of initializer functions (at least one driver required)")
 
-  const from = (in$, key) =>
-    in$.filter(s => s.key === key).map(s => s.val)
+  const decompose = (s$, ...keys) => {
+    const decomposed = keys.reduce((o, k) => ({...o, [k]: from(s$, k)}), {})
+    const rest$ = s$.filter(keyNotIn(keys))
+    return [decomposed, rest$]
+  }
 
-  const fromMany = (in$, ...keys) =>
-    keys.reduce((o, k) => ({...o, [k]: from(in$, k)}), {})
+  const compose = (objOf$, rest$, ext = false) => {
+    const composed$ = O.merge(...objKeys(objOf$).map(k => to(objOf$[k], k, ext)))
+    return rest$ ? composed$.merge(rest$) : composed$
+  }
 
-  const to = (out$, key, ext = false) =>
-    out$.map(val => ({key, val, ext}))
+  const extract = (s$, ...keys) =>
+    decompose(s$, ...keys)[0]
 
-  const toMany = (objOf$, ext = false) =>
-    O.merge(...objKeys(objOf$).map(k => to(objOf$[k], k, ext)))
+  const lift = (val$$, ...keys) => {
+    const res$ = val$$.switch().share()
+    return decompose(res$, ...keys)
+  }
 
-  const decompose = (out$, ...extraKeys) =>
-    fromMany(out$, ...[...driverKeys, ...extraKeys])
+  const liftArray = (arr$, it, ...keys) => {
+    const out$$ = arr$.map(vals => vals.map(it)).share()
+    const step = (obj, k) => ({
+      ...obj,
+      [k]: out$$.map(o => O.combineLatest(...o.map(o$ => from(o$, k)))).switch().share()
+    })
+    const lifted = keys.reduce(step, {})
+    const rest$ = out$$.map(o => O.merge(o)).switch().filter(keyNotIn(keys)).share()
+    return [lifted, rest$]
+  }
 
-  const compose = objOf$ => toMany(objOf$, true)
-
-  const loop = (in$, main) => {
+  const run = (in$, main) => {
     let lo = null
     const loop$ = in$
       .filter(s => s.ext)
@@ -61,11 +83,7 @@ function TSERS(drivers) {
     }).share()
   }
 
-  const run = (in$, main, ...extraKeys) =>
-    decompose(loop(in$, main), ...extraKeys)
-
-
-  const CommonTransducers = {from, fromMany, to, toMany, compose, decompose, loop, run}
+  const CommonTransducers = {compose, decompose, run, extract, lift, liftArray}
   const DriverImports = CommonTransducers
   const dds = mapValuesWhen(drivers, d => d(DriverImports))
 
@@ -74,7 +92,7 @@ function TSERS(drivers) {
     ...mapValuesWhen(dds, d => d.transducers)
   }
   const S =
-    compose(mapValuesWhen(dds, d => d.signals))
+    compose(mapValuesWhen(dds, d => d.signals), null, true)
 
   const executors =
     mapValuesWhen(dds, d => d.executor)
@@ -83,7 +101,7 @@ function TSERS(drivers) {
 
   const E = function execute(output$) {
     const noopd = {dispose: noop}
-    const out = decompose(output$)
+    const [out] = decompose(output$, ...objKeys(executors))
     return new Rx.CompositeDisposable(...objKeys(out).map(key =>
       executors[key] ? executors[key](out[key]) || noopd : noopd
     ))

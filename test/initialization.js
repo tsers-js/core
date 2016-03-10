@@ -40,29 +40,17 @@ describe("initialization", () => {
     }
   })
 
-  it("adds common signal transducers", done => {
+  it("adds common signal transducers", () => {
     const A = () => ({executor: noop})
     const [T, _, __] = TSERS({A})
-    const { from, fromMany, to, toMany, compose, decompose, loop, run } = T
+    const { compose, decompose, extract, lift, liftArray, run } = T
 
-    // we have other tests for these
     compose.should.be.Function()
     decompose.should.be.Function()
-    loop.should.be.Function()
+    extract.should.be.Function()
+    lift.should.be.Function()
+    liftArray.should.be.Function()
     run.should.be.Function()
-
-    const res$ = O.merge(
-      from(O.of([{key: "tsers", val: 1}, {key: "foo", val: 2}]), "tsers")
-        .do(x => x.should.equal(1)),
-      fromMany(O.just({key: "tsers", val: 1}), "tsers").tsers
-        .do(x => x.should.equal(1)),
-      to(O.of("tsers"), "lol", true)
-        .do(x => x.should.deepEqual({key: "lol", val: "tsers", ext: true})),
-      toMany({foo: O.just("bar"), tsers: O.just("tsers").delay(1)})
-        .bufferWithCount(2)
-        .do(x => x.should.deepEqual([{key: "foo", val: "bar", ext: false}, {key: "tsers", val: "tsers", ext: false}]))
-    )
-    res$.subscribe(noop, done.fail, done)
   })
 
   it("discards missing driver keys", () => {
