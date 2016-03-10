@@ -53,7 +53,7 @@ function TSERS(drivers) {
     const out$$ = arr$.map(vals => vals.map(it)).share()
     const step = (obj, k) => ({
       ...obj,
-      [k]: out$$.map(o => O.combineLatest(...o.map(o$ => from(o$, k)))).switch().share()
+      [k]: out$$.map(o => o.length ? O.combineLatest(...o.map(o$ => from(o$, k))) : O.just([])).switch().share()
     })
     const lifted = keys.reduce(step, {})
     const rest$ = out$$.map(o => O.merge(o)).switch().filter(keyNotIn(keys)).share()

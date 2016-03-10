@@ -178,5 +178,18 @@ describe("common transducers", () => {
         done()
       })
     })
+    it("supports also empty array values", done => {
+      const [{liftArray}] = TSERS({A: tsersDriver})
+      const sBy = val => O.of({key: "A", val: "a" + val})
+
+      const in$ = O.just([]).repeat(2)
+      const [res, _] = liftArray(in$, sBy, "A")
+      res.A.should.be.instanceof(O)
+      res.A.bufferWithCount(2).subscribe(x => {
+        x.should.deepEqual([[], []])
+        done()
+      })
+    })
   })
+
 })
