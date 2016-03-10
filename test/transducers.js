@@ -59,12 +59,12 @@ describe("common transducers", () => {
       function main(in$) {
         const withBang = s$ => s$.map(x => x + "!")
         return [
-          compose({A3: withBang(extract(in$, "A2").A2)}),    // out
-          compose({A2: withBang(extract(in$, "A").A)})       // loop
+          compose({A3: withBang(extract(in$, "A2"))}),    // out
+          compose({A2: withBang(extract(in$, "A"))})       // loop
         ]
       }
 
-      extract(run(S, main), "A3").A3.subscribe(x => {
+      extract(run(S, main), "A3").subscribe(x => {
         x.should.equal("tsers!!")
         done()
       })
@@ -76,7 +76,7 @@ describe("common transducers", () => {
         return [in$.merge(compose({A: O.just("lolbal").delay(10)}))]
       }
 
-      const d = extract(run(S, main), "A").A.subscribe(x => {
+      const d = extract(run(S, main), "A").subscribe(x => {
         x.should.equal("tsers")
         d.dispose()
         setTimeout(done, 100)

@@ -42,8 +42,7 @@ function TSERS(drivers) {
     return rest$ ? composed$.merge(rest$) : composed$
   }
 
-  const extract = (s$, ...keys) =>
-    decompose(s$, ...keys)[0]
+  const extract = from
 
   const lift = (val$$, ...keys) => {
     const res$ = val$$.switch().share()
