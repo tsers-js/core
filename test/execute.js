@@ -36,7 +36,7 @@ describe("execute()", () => {
       A: O.just("a").delay(0),
       B: O.just("b").delay(10).do(done.fail)
     })
-    s.bufferWithTime(200).subscribe(() => done())
+    s.bufferWithTime(200).first().subscribe(() => done())
     d = E(out$)
   })
 

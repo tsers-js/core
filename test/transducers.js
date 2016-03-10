@@ -33,7 +33,7 @@ describe("common transducers", () => {
       const [{decompose}] = TSERS({A: tsersDriver, B: tsersDriver})
       const in$ = O.of({key: "A", val: "a"}, {key: "state$", val: ".."})
       const [_, rest$] = decompose(in$, "state$", "val$")
-      rest$.bufferWithTime(10).subscribe(x => {
+      rest$.bufferWithTime(10).first().subscribe(x => {
         x.should.deepEqual([{key: "A", val: "a"}])
         done()
       })
