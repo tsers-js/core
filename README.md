@@ -9,4 +9,4 @@
 
 > "tsers!"
 
-Pronounced *"cheers!"*
+![Diagram](doc/diagram.png)
