@@ -37,8 +37,8 @@ function TSERS(drivers) {
     return [decomposed, rest$]
   }
 
-  const compose = (objOf$, rest$, ext = false) => {
-    const composed$ = O.merge(...objKeys(objOf$).map(k => to(objOf$[k], k, ext)))
+  const compose = (objOf$, rest$) => {
+    const composed$ = O.merge(...objKeys(objOf$).map(k => to(objOf$[k], k, true)))
     return rest$ ? composed$.merge(rest$) : composed$
   }
 
@@ -71,7 +71,7 @@ function TSERS(drivers) {
     const result = main(in$)
     const out$ = (isArray(result) ? result[0] : result) || O.never()
     const loop$ = (isArray(result) ? result[1] : null) || O.never()
-    return out$.merge(loop$.filter(val => lo && lo.onNext(val) && false)).share()
+    return out$.merge(loop$.filter(val => lo && lo.onNext({...val, ext: false}) && false)).share()
   }
 
   const CommonTransducers = {compose, decompose, run, extract, lift, liftArray}
@@ -88,7 +88,7 @@ function TSERS(drivers) {
     ...mapValuesWhen(dds, d => d.transducers)
   }
   const S =
-    compose(mapValuesWhen(dds, d => d.signals), null, true)
+    compose(mapValuesWhen(dds, d => d.signals))
 
   const E = function execute(output$) {
     const noopd = {dispose: noop}
