@@ -78,17 +78,17 @@ function TSERS(drivers) {
   const DriverImports = CommonTransducers
   const dds = mapValuesWhen(drivers, d => d(DriverImports))
 
+  const executors =
+    mapValuesWhen(dds, d => d.executor)
+
+  if (objKeys(executors).length === 0) throw new Error("At least one executor is required")
+
   const T = {
     ...CommonTransducers,
     ...mapValuesWhen(dds, d => d.transducers)
   }
   const S =
     compose(mapValuesWhen(dds, d => d.signals), null, true)
-
-  const executors =
-    mapValuesWhen(dds, d => d.executor)
-
-  if (objKeys(executors).length === 0) throw new Error("At least one executor is required")
 
   const E = function execute(output$) {
     const noopd = {dispose: noop}
