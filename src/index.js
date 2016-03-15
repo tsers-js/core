@@ -3,9 +3,10 @@ import Rx, {Observable as O} from "rx"
 const objKeys = x =>
   x ? Object.keys(x) : []
 
+const isFun = x => typeof x === "function"
 const isObj = x => typeof x === "object" && x.constructor === Object
-
 const isArray = x => x && Array.isArray(x)
+const isObs = x => x && x instanceof O
 
 const noop = () => undefined
 
@@ -79,16 +80,16 @@ function TSERS(drivers) {
   const dds = mapValuesWhen(drivers, d => d(DriverImports))
 
   const executors =
-    mapValuesWhen(dds, d => d.executor)
+    mapValuesWhen(dds, d => d[2] || (isFun(d) && d))
 
   if (objKeys(executors).length === 0) throw new Error("At least one executor is required")
 
   const T = {
     ...CommonTransducers,
-    ...mapValuesWhen(dds, d => d.transducers)
+    ...mapValuesWhen(dds, d => d[0] || (isObj(d) && d))
   }
   const S =
-    compose(mapValuesWhen(dds, d => d.signals))
+    compose(mapValuesWhen(dds, d => d[1] || (isObs(d) && d)))
 
   const E = function execute(output$) {
     const noopd = {dispose: noop}
