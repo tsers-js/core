@@ -60,26 +60,18 @@ function TSERS(drivers) {
     return [lifted, rest$]
   }
 
-  const run = (in$, main) => {
+  const run = (input$, main) => {
     let lo = null
-    const loop$ = in$
+    const in$ = input$
       .filter(s => s.ext)
       .doOnCompleted(() => lo && lo.onCompleted() && (lo = null))
       .merge(O.create(o => (lo = o) && (() => lo = null)))
       .share()
 
-    const res = main(loop$)
-    const out$ = isArray(res) ? res[0] : res
-    const looped$ = isArray(res) ? res[1] : undefined
-    const all$ = compose({lo: looped$ || O.never(), out: out$ || O.never()})
-
-    return O.create(out => {
-      return all$.subscribe(
-        ({key, val}) => key === "out" ? out.onNext(val) : (lo && lo.onNext(val)),
-        error => out.onError(error),
-        () => out.onCompleted()
-      )
-    }).share()
+    const result = main(in$)
+    const out$ = (isArray(result) ? result[0] : result) || O.never()
+    const loop$ = (isArray(result) ? result[1] : null) || O.never()
+    return out$.merge(loop$.filter(val => lo && lo.onNext(val) && false)).share()
   }
 
   const CommonTransducers = {compose, decompose, run, extract, lift, liftArray}
