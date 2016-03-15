@@ -81,15 +81,15 @@ Cycle's `main` is:
 const main = sources => sinks
 ``` 
 Where `sources` can be either streams or transducers or stream generators or 
-combination of those and `sinks` are streams of signals going to "outside world".
+combination of those and `sinks` are streams of signals going to the "outside world".
 
 TSERS' `main` is:
 ```javascript
 const main = Transducers => input$ => output$
 ``` 
 Where `Transducers` is always a collection of signal transducer functions, 
-`input$` is a stream of events coming from "outside world" and `output$` is a
-stream of signals going to "outside world".
+`input$` is a stream of events coming from the "outside world" and `output$` is a
+stream of signals going to the "outside world".
 
 And same applies for drivers. Cycle driver is a function:
 ```javascript
@@ -106,7 +106,7 @@ function driver() {
   return { signals, Transducers, executor: output$ => {} }
 }
 ```  
-Where `signals` is a stream of signals coming from "outside world", 
+Where `signals` is a stream of signals coming from the "outside world", 
 `Transducers` is a collection of transducer functions and `executor` is
 an interpreter that subscribes to the `output$` signals and creates 
 side-effects based on those signals.
@@ -115,7 +115,7 @@ side-effects based on those signals.
 ## Usage
 
 TSERS provides only one public function via `default` exports. That function takes 
-an object of driver functions (see detailed driver spec below) and returns an array 
+an object of drivers (see detailed driver spec below) and returns an array 
 containing `Transducers`, `signals` and `execute`.
 
 ```javascript
@@ -179,13 +179,13 @@ rest$.subscribe(::console.log)            // =>  {key: "lol", val: "bal"}
 
 #### `compose :: ({[key]: [signals-of-key]}, rest$ = O.never()) => output$`
 
-`compose` does exactly opposite as `decompose` - it maps the given signals to
-the signals of `{key,val}` pairs and merges them. For convenience, it also
+`compose` does exactly opposite as `decompose` - it maps the given input values to
+the `{key,val}` pairs based on the input template and merges them. For convenience, it also
 takes rest input signals (key-value pairs) as a second (optional) argument and
 merges them to the final output stream.
 
 ![compose](doc/compose.png)
-```javascipt
+```javascript
 const foo$ = O.just("foo!")
 const bar$ = O.just("bar..")
 const rest$ = O.just({key: "lol", value: "bal"})
@@ -209,7 +209,7 @@ array - `output$` signals are passed through as they are, but `loop$` signals
 are merged back to the transducer function as input signals.
 
 Before `loop$` signals are merged to the other input signals, they are "masked"
-with (`ext=false`) key. This ensures that `loop$` signals "private": parent's 
+with (`ext=false`) key. This ensures that `loop$` signals are "private": parent's 
 `loop$` signals are not visible in child's `input$`.
 
 `run` accepts the return value in many formats: you can omit the second array
@@ -283,5 +283,89 @@ const { run } = Transducers
 const dispose = execute(run(signals, main(Transducers)))
 ``` 
 
-Just some simple function composition. That's TSERS!
+Now you may understand why the signature of `main` is `Transducers => input$ => output$`: 
+it's all about composition. That's TSERS!
+
+
+## Model-View-Intent
+
+The one major difference between TSERS and Cycle is that TSERS implements the real `MVI` 
+whereas Cycle implements `IMV`. In practice this means that in Cycle apps, the border
+of **M**odel and **I**ntent becomes blurry when you have a cross-dependency between
+them. The simplest case is a form validation:
+
+1. In order to send the form to the server, you must have the form values (intent depends on model)
+2. In order to show an AJAX spinner during the validation, the send status must be 
+stored to the form (model depends on intent)
+
+If course that is solvable also with `IMV` and there are more or less elegant solutions 
+either leaking memory or not.
+
+In `MVI` however, there is no exception - you can **always** apply `MVI` and loop
+the model dependencies with `loop$` signals back to model.
+
+```javascript
+const main = T => in$ => {
+  const {DOM, HTTP, decompose, compose} = T
+  const [actions] = decompose(in$, "validate$", "validated$")
+  return intent(view(model(actions)))
+  
+  function model({validate$, validated$}) {
+    const form$ = validate$
+      .map(showSpinner)
+      .merge(validated$.map(embedValidationResultsAndRemoveSpinner))
+      .startWith(initialValues)
+      .shareReplay(1)
+    return form$
+  }
+  
+  function view(form$) {
+    return [form$, buildFormVDOM(form$)]
+  }
+  
+  function intent([form$, vdom$]) {
+    const validate$ = DOM.events(vdom$, "button.validate", "click").withLatestFrom(form$)
+    const validated$ = HTTP.req(validate$.map(toReqObject)).switch()
+    const out$ = compose({DOM: vdom$, value$: form$})
+    const loop$ = compose({validate$, validated$})
+    return [out$, loop$]
+  }
+}
+
+// index.js
+execute(run(signals, main(Transducers)))
+```
+
+TODO: show how to implement Cycle with a few lines of TSERS
+
+## Common Transducer API reference
+
+TODO: examples
+
+```javascript
+//compose :: ({[key]: [signals-of-key]}, rest$ = O.never()) => output$
+ 
+ 
+// decompose :: (in$, ...keys) => [{[key]: [signals-of-key]}, rest$]
+ 
+ 
+// run :: (in$, (in$ => [out$, loop$])) => out$
+
+
+// lift :: (out$$, ...keys) => [{[key]: [signals-of-key]}, rest$]
+const out$$ = form$.map(f => run(in$, Child(Transducers, f.childValue)))
+const [{DOM, value$}, rest$] = lift(out$$, "DOM", "value$")
+ 
+// liftArray :: (outArr$, (val => out$), ...keys) => [{[key]: [signals-of-key]}, rest$]
+const persons$ = form$.map(f => f.persons)
+const [{DOM, value$}, rest$] = liftArray(persons$, person => run(in$, Person(Transducers, person)),
+  "DOM", "value$")
+// DOM is now an array of latest DOM values of Person components
+// value$ is now an array of latest values of Persons
+```
+
+
+## License
+
+MIT
 
