@@ -321,6 +321,7 @@ const main = T => in$ => {
       .map(showSpinner)
       .merge(validated$.map(embedValidationResultsAndRemoveSpinner))
       .startWith(initialValues)
+      .scan(applyMods)
       .shareReplay(1)
     return form$
   }
