@@ -3,7 +3,7 @@ import Rx, {Observable as O} from "rx"
 import TSERS from "../src/index"
 
 
-const driver = executor => () => ({executor})
+const driver = executor => () => executor
 
 describe("execute()", () => {
 

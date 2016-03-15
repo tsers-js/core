@@ -12,7 +12,7 @@ describe("initialization", () => {
   })
 
   it("requires at least one executor", () => {
-    const A = () => ({signals: O.just(".."), transforms: {}})
+    const A = () => [O.just(".."), {}]
     should.throws(() => TSERS({A}))
   })
 
@@ -22,26 +22,23 @@ describe("initialization", () => {
     const [T, S, E] = TSERS({A, B})
 
     S.should.be.instanceof(O)
-    should(T.A.foo === eA.transducers.foo).be.true()
-    should(T.B.foo === eB.transducers.foo).be.true()
+    should(T.A.foo === eA[0].foo).be.true()
+    should(T.B.foo === eB[0].foo).be.true()
     should(T.A.foo === T.B.foo).be.false()
     should(E).be.Function()
 
     function makeDriver() {
-      const contents = {
-        signals: O.just("tsers"),
-        transducers: {
-          foo: () => null
-        },
-        executor: () => null
-      }
+      const Transducers = { foo: () => null }
+      const signals = O.just("tsers")
+      const executor = () => null
+      const contents = [Transducers, signals, executor]
       const driver = () => contents
       return {driver, contents}
     }
   })
 
   it("adds common signal transducers", () => {
-    const A = () => ({executor: noop})
+    const A = () => noop
     const [T, _, __] = TSERS({A})
     const { compose, decompose, extract, lift, liftArray, run } = T
 
@@ -53,25 +50,25 @@ describe("initialization", () => {
     run.should.be.Function()
   })
 
-  it("discards missing driver keys", () => {
-    const signals = O.just("a"), transducers = {}, executor = noop
-    const A = () => ({signals, transducers})
-    const B = () => ({transducers, executor})
-    const C = () => ({signals, executor})
+  it("discards null and undefined values", () => {
+    const signals = O.just("a"), Transducers = {}, executor = noop
+    const A = () => [Transducers, signals]
+    const B = () => [Transducers, null, executor]
+    const C = () => [null, signals, executor]
     const [T, _, __] = TSERS({A, B, C})
     should(T.C).be.undefined()
     should(T.A).not.be.undefined()
   })
 
   it("allows creating env with no signals at all", done => {
-    const A = () => ({transducers: {}, executor: noop})
+    const A = () => [{}, null, noop]
     const [_, S, __] = TSERS({A})
     S.subscribe(done.fail, done.fail, done)
   })
 
   it("merges signals and marks them with drivers key", done => {
-    const A = () => ({signals: O.just("a"), executor: noop})
-    const B = () => ({signals: O.just("b").delay(1), executor: noop})
+    const A = () => [null, O.just("a"), noop]
+    const B = () => [null, O.just("b").delay(1), noop]
     const [_, S, __] = TSERS({A, B})
 
     S.bufferWithCount(2).subscribe(s => {

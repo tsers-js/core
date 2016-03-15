@@ -4,10 +4,7 @@ import TSERS from "../src/index"
 
 const noop = () => null
 
-const tsersDriver = () => ({
-  signals: O.just("tsers").delay(0),
-  executor: noop
-})
+const tsersDriver = () => [null, O.just("tsers").delay(0), noop]
 
 describe("common transducers", () => {
 
