@@ -42,12 +42,11 @@ import makeReactDOM as "@tsers/react"
 const main = T => in$ => {
   const {DOM: {h, prepare, events}, decompose, compose} = T
 
-  const [actions] = decompose(in$, "add$")
+  const [actions] = decompose(in$, "append$")
   return intent(view(model(actions)))
 
-  function model({addBang$}) {
-    const msg$ = addBang$
-      .map(() => "!")
+  function model({append$}) {
+    const msg$ = append$
       .startWith("Tsers")
       .scan((acc, s) => acc + s)
     return msg$
@@ -63,8 +62,8 @@ const main = T => in$ => {
   }
 
   function intent(vdom$) {
-    const addBang$ = events(vdom$, ".add", "click")
-    const loop$ = compose({addBang$})
+    const append$ = events(vdom$, ".add", "click").map(() => "!")
+    const loop$ = compose({append$})
     const out$ = compose({DOM: vdom$})
     return [out$, loop$]
   }
