@@ -379,3 +379,4 @@ const [{DOM, value$}, rest$] = liftArray(persons$, person => run(in$, Person(Tra
 
 MIT
 
+Logo by [Globalicon](http://www.myiconfinder.com/Globalicon) (CC BY 3.0)
