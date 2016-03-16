@@ -320,10 +320,9 @@ const main = T => in$ => {
   return intent(view(model(actions)))
   
   function model({validate$, validated$}) {
-    const form$ = validate$
-      .map(showSpinner)
-      .merge(validated$.map(embedValidationResultsAndRemoveSpinner))
-      .startWith(initialValues)
+    const form$ = validate$.map(toShowSpinnerMod)
+      .merge(validated$.map(toAddValidationResultsAndRemoveSpinnerMod))
+      .startWith(someInitialValues)
       .scan(applyMods)
       .shareReplay(1)
     return form$
@@ -334,8 +333,8 @@ const main = T => in$ => {
   }
   
   function intent([form$, vdom$]) {
-    const validate$ = DOM.events(vdom$, "button.validate", "click").withLatestFrom(form$)
-    const validated$ = HTTP.req(validate$.map(toReqObject)).switch()
+    const validate$ = DOM.events(vdom$, "button.validate", "click")
+    const validated$ = HTTP.req(form$.sample(validate$).map(toReqObject)).switch()
     const out$ = compose({DOM: vdom$, value$: form$})
     const loop$ = compose({validate$, validated$})
     return [out$, loop$]
@@ -343,7 +342,7 @@ const main = T => in$ => {
 }
 
 // index.js
-execute(run(signals, main(Transducers)))
+executor(run(signal$, main(Transducers)))
 ```
 
 
