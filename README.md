@@ -363,13 +363,13 @@ TODO: examples
 // run :: (in$, (in$ => [out$, loop$])) => out$
 
 
-// lift :: (out$$, ...keys) => [{[key]: [signals-of-key]}, rest$]
+// decomposeLatest :: (out$$, ...keys) => [{[key]: [signals-of-key]}, rest$]
 const out$$ = form$.map(f => run(in$, Child(Transducers, f.childValue)))
-const [{DOM, value$}, rest$] = lift(out$$, "DOM", "value$")
+const [{DOM, value$}, rest$] = decomposeLatest(out$$, "DOM", "value$")
  
-// liftArray :: (outArr$, (val => out$), ...keys) => [{[key]: [signals-of-key]}, rest$]
+// listDecomposeLatest :: (outArr$, (val => out$), ...keys) => [{[key]: [signals-of-key]}, rest$]
 const persons$ = form$.map(f => f.persons)
-const [{DOM, value$}, rest$] = liftArray(persons$, person => run(in$, Person(Transducers, person)),
+const [{DOM, value$}, rest$] = listDecomposeLatest(persons$, person => run(in$, Person(Transducers, person)),
   "DOM", "value$")
 // DOM is now an array of latest DOM values of Person components
 // value$ is now an array of latest values of Persons
