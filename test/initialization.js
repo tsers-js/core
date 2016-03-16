@@ -40,13 +40,13 @@ describe("initialization", () => {
   it("adds common signal transducers", () => {
     const A = () => noop
     const [T, _, __] = TSERS({A})
-    const { compose, decompose, extract, lift, liftArray, run } = T
+    const { compose, decompose, extract, decomposeLatest, listDecomposeLatest, run } = T
 
     compose.should.be.Function()
     decompose.should.be.Function()
     extract.should.be.Function()
-    lift.should.be.Function()
-    liftArray.should.be.Function()
+    decomposeLatest.should.be.Function()
+    listDecomposeLatest.should.be.Function()
     run.should.be.Function()
   })
 

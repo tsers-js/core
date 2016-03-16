@@ -91,15 +91,15 @@ describe("common transducers", () => {
     })
   })
 
-  describe("lift(val$$, ...keys)", () => {
+  describe("decomposeLatest(val$$, ...keys)", () => {
     it("switches to the latest input and decomposes it by using the given keys", done => {
-      const [{lift}, _, __] = TSERS({A: tsersDriver})
+      const [{decomposeLatest}, _, __] = TSERS({A: tsersDriver})
       const streams = {
         foo: O.of({key: "A", val: "a1"}, {key: "B", val: "b1"}).merge(O.of({key: "A", val: "a11"}).delay(10)),
         bar: O.of({key: "A", val: "a2"})
       }
       const in$ = O.of("foo").merge(O.of("bar").delay(1))
-      const [res] = lift(in$.map(s => streams[s]), "A", "B")
+      const [res] = decomposeLatest(in$.map(s => streams[s]), "A", "B")
       res.A.should.be.instanceof(O)
       res.B.should.be.instanceof(O)
       res.A.bufferWithTime(100).first().subscribe(x => {
@@ -108,13 +108,13 @@ describe("common transducers", () => {
       })
     })
     it("returns the rest of output as a second parameter stream", done => {
-      const [{lift}] = TSERS({A: tsersDriver})
+      const [{decomposeLatest}] = TSERS({A: tsersDriver})
       const streams = {
         foo: O.of({key: "A", val: "a1"}, {key: "B", val: "b1"}).merge(O.of({key: "A", val: "a11"}).delay(1)),
         bar: O.of({key: "A", val: "a2"})
       }
       const in$ = O.of("foo").merge(O.of("bar").delay(1))
-      const [_, rest$] = lift(in$.map(s => streams[s]), "A")
+      const [_, rest$] = decomposeLatest(in$.map(s => streams[s]), "A")
       rest$.should.be.instanceof(O)
       rest$.bufferWithTime(100).first().subscribe(x => {
         x.should.deepEqual([{key: "B", val: "b1"}])
@@ -123,9 +123,9 @@ describe("common transducers", () => {
     })
   })
 
-  describe("liftArray(arr$, val => res$, ...keys)", () => {
+  describe("listDecomposeLatest(arr$, val => res$, ...keys)", () => {
     it("switches decomposes and combines array values by using given keys", done => {
-      const [{liftArray}] = TSERS({A: tsersDriver})
+      const [{listDecomposeLatest}] = TSERS({A: tsersDriver})
       let n = 0
       const sBy = val =>
         O.of({key: "A", val: "a" + n + val}, {key: "B", val: "b" + n + val})
@@ -139,7 +139,7 @@ describe("common transducers", () => {
         }, 0)
       }, 0))
 
-      const [res, _] = liftArray(in$, sBy, "A")
+      const [res, _] = listDecomposeLatest(in$, sBy, "A")
       res.A.should.be.instanceof(O)
       res.A.bufferWithTime(100).first().subscribe(x => {
         x.should.deepEqual([["a14", "a11", "a15"], ["a22", "a25", "a23"]])
@@ -147,7 +147,7 @@ describe("common transducers", () => {
       })
     })
     it("returns the rest of output as a second parameter stream", done => {
-      const [{liftArray}] = TSERS({A: tsersDriver})
+      const [{listDecomposeLatest}] = TSERS({A: tsersDriver})
       let n = 0
       const sBy = val =>
         O.of({key: "A", val: "a" + n + val}, {key: "B", val: "b" + n + val})
@@ -161,7 +161,7 @@ describe("common transducers", () => {
         }, 0)
       })
 
-      const [_, rest$] = liftArray(in$, sBy, "A")
+      const [_, rest$] = listDecomposeLatest(in$, sBy, "A")
       rest$.should.be.instanceof(O)
       rest$.bufferWithTime(100).first().subscribe(x => {
         x.should.deepEqual([
@@ -176,11 +176,11 @@ describe("common transducers", () => {
       })
     })
     it("supports also empty array values", done => {
-      const [{liftArray}] = TSERS({A: tsersDriver})
+      const [{listDecomposeLatest}] = TSERS({A: tsersDriver})
       const sBy = val => O.of({key: "A", val: "a" + val})
 
       const in$ = O.just([]).repeat(2)
-      const [res, _] = liftArray(in$, sBy, "A")
+      const [res, _] = listDecomposeLatest(in$, sBy, "A")
       res.A.should.be.instanceof(O)
       res.A.bufferWithCount(2).subscribe(x => {
         x.should.deepEqual([[], []])

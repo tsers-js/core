@@ -45,20 +45,20 @@ function TSERS(drivers) {
 
   const extract = from
 
-  const lift = (val$$, ...keys) => {
+  const decomposeLatest = (val$$, ...keys) => {
     const res$ = val$$.switch().share()
     return decompose(res$, ...keys)
   }
 
-  const liftArray = (arr$, it, ...keys) => {
+  const listDecomposeLatest = (arr$, it, ...keys) => {
     const out$$ = arr$.map(vals => vals.map(it)).share()
     const step = (obj, k) => ({
       ...obj,
       [k]: out$$.map(o => o.length ? O.combineLatest(...o.map(o$ => from(o$, k))) : O.just([])).switch().share()
     })
-    const lifted = keys.reduce(step, {})
+    const decomposed = keys.reduce(step, {})
     const rest$ = out$$.map(o => O.merge(o)).switch().filter(keyNotIn(keys)).share()
-    return [lifted, rest$]
+    return [decomposed, rest$]
   }
 
   const run = (input$, main) => {
@@ -75,7 +75,7 @@ function TSERS(drivers) {
     return out$.merge(loop$.filter(val => lo && lo.onNext({...val, ext: false}) && false)).share()
   }
 
-  const CommonTransducers = {compose, decompose, run, extract, lift, liftArray}
+  const CommonTransducers = {compose, decompose, run, extract, decomposeLatest, listDecomposeLatest}
   const DriverImports = CommonTransducers
   const dds = mapValuesWhen(drivers, d => d(DriverImports))
 
