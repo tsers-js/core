@@ -1,6 +1,7 @@
 # TSERS
 
-**T**ransducer-**S**ignal-**E**xecutor framework for **R**eactive **S**treams.
+**T**ransducer-**S**ignal-**E**xecutor framework for **R**eactive **S**treams 
+(RxJS only at the moment... :disappointed:).
 
 [![Travis Build](https://img.shields.io/travis/tsers-js/core/master.svg?style=flat-square)](https://travis-ci.org/tsers-js/core)
 [![Code Coverage](https://img.shields.io/codecov/c/github/tsers-js/core/master.svg?style=flat-square)](https://codecov.io/github/tsers-js/core)
@@ -14,13 +15,13 @@
 ## Motivation
 
 *What if your application was just a pure function?* That's a very interesting
-idea introduced by [Cycle.js](http://cycle.js.org/). Although this idea is nice,
+idea introduced by [Cycle.js](http://cycle.js.org/). Although the idea is nice,
 the actual implementation of Cycle is not. The development is driven by vague 
 concepts such as "read/write effects" and "pureness" of the `main`, resulting
-inconsistency in driver implementations (even official ones!) and leaving the
-real issues open - the entire framework is designed to create a "cycle" around 
+inconsistency in driver implementations (even among the official ones!) and leaving 
+the real issues open - the entire framework is designed to create a "cycle" around 
 the application. However developers must still implement their own "sub-cycles" 
-and "isolation" inside their pure apps. 
+and "isolation" inside their "pure apps". 
 
 Despite its implementation flaws, Cycle has some great concepts. Maintaining 
 those concepts and implementing them properly is the goal of **TSERS**:
@@ -69,11 +70,11 @@ const main = T => in$ => {
   }
 }
 
-const [Transducers, signals, execute] = TSERS({
+const [Transducers, signal$, executor] = TSERS({
   DOM: makeReactDOM("#app")
 })
 const { run } = Transducers
-execute(run(signals, main(Transducers)))
+executor(run(signal$, main(Transducers)))
 ``` 
 
 
@@ -120,14 +121,15 @@ and creates side-effects based on those signals.
 ## Usage
 
 TSERS provides only one public function via `default` exports. That function takes 
-an object of drivers and returns an array containing `Transducers`, `signal$` and `execute`.
+an object of drivers and returns an array containing `Transducers`, `signal$` and 
+`executor`.
 
 ```javascript
 import TSERS from "@tsers/core"
 import makeReactDOM from "@tsers/react"
 import main from "./your-app"
 
-const [Transducers, signals, execute] = TSERS({
+const [Transducers, signals, executor] = TSERS({
   DOM: makeReactDOM("#app")
 })
 ``` 
@@ -234,15 +236,15 @@ output$.subscribe(::console.log)  // => "tsers?!"
 ```
 
 
-### Execute
+### Executor
 
-`execute` is like Cycle's `run` but it doesn't make signal proxying from
+`executor` is like Cycle's `run` but it doesn't make signal proxying from
 `output$` back to `input$` (TSERS already has `run` for it!). Its only task 
 is to subscribe to the output signals, interpret them and execute the 
 side-effects if necessary. 
 
-`execute` also ensures that output signals are routed correctly to their
-own drivers. Routing is done by using signal `key` signals having key `X`
+`executor` also ensures that output signals are routed correctly to their
+drivers' executors. Routing is done by using signal `key` signals having key `X`
 are routed to driver `X` and so on.
 
 ```javascript
@@ -260,7 +262,7 @@ const [T, signal$, execute] = TSERS({DOM: domDriver(), WS: wsDriver()})
 execute(T.run(singnal$, main(T))) 
 ```
 
-`execute` returns a `dispose` function which can be called to unsubscribe ("stop")
+`executor` returns a `dispose` function which can be called to dispose ("stop")
 the execution:
 ```javascript
 const dispose = execute(output$)
@@ -272,10 +274,10 @@ setTimeout(dispose, 1000)  // stop after 1 sec
 
 We know that:
 
-1. `signals :: input$`
+1. `signal$ = input$`
 2. `main :: Transducers => input$ => output$`
 3. `Tranducers.run :: (input$, input$ => [output$, loop$]) => output$`
-4. `execute :: output$ => dispose` 
+4. `executor :: output$ => dispose` 
 
 Let's compose those:
 ```javascript
@@ -283,16 +285,17 @@ import TSERS from "@tsers/core"
 import makeReactDOM from "@tsers/react"
 import main from "./your-app"
 
-const [Transducers, signals, execute] = TSERS({
+const [Transducers, signal$, executor] = TSERS({
   DOM: makeReactDOM("#app")
 })
 const { run } = Transducers
 
-const dispose = execute(run(signals, main(Transducers)))
+const dispose = executor(run(signal$, main(Transducers)))
 ``` 
 
-Now you may understand why the signature of `main` is `Transducers => input$ => output$`: 
-it's all about composition. That's TSERS!
+Now you may understand why the signature of `main` is `Transducers => input$ => output$`:
+it allows you to pass down the transducers and use them at the same time without partial
+application or currying. It's all about composition. It's TSERS!
 
 
 ## Model-View-Intent
@@ -343,7 +346,6 @@ const main = T => in$ => {
 execute(run(signals, main(Transducers)))
 ```
 
-TODO: show how to implement Cycle with a few lines of TSERS
 
 ## Common Transducer API reference
 
