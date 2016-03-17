@@ -309,7 +309,7 @@ them. The simplest case is a form validation:
 2. In order to show an AJAX spinner during the validation, the send status must be 
 stored to the form (model depends on intent)
 
-If course that is solvable with `IMV` and there are more or less elegant solutions 
+Of course that is solvable with `IMV` and there are more or less elegant solutions 
 either leaking memory or not. In `MVI` however, there is no exception - you can 
 **always** apply `MVI` and loop the model dependencies back to input by using `run`.
 
