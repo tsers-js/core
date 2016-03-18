@@ -1,6 +1,6 @@
 # TSERS
 
-**T**ransducer-**S**ignal-**E**xecutor framework for **R**eactive **S**treams 
+**T**ransducer-**S**ignal-**E**xecutor framework for **R**eactive **S**treams
 (RxJS only at the moment... :disappointed:).
 
 [![Travis Build](https://img.shields.io/travis/tsers-js/core/master.svg?style=flat-square)](https://travis-ci.org/tsers-js/core)
@@ -16,14 +16,14 @@
 
 *What if your application was just a pure function?* That's a very interesting
 idea introduced by [Cycle.js](http://cycle.js.org/). Although the idea is nice,
-the actual implementation of Cycle is not. The development is driven by vague 
+the actual implementation of Cycle is not. The development is driven by vague
 concepts such as "read/write effects" and "pureness" of the `main`, resulting
-inconsistency in driver implementations (even among the official ones!) and leaving 
-the real issues open - the entire framework is designed to create a "cycle" around 
-the application. However developers must still implement their own "sub-cycles" 
-and "isolation" inside their "pure apps". 
+inconsistency in driver implementations (even among the official ones!) and leaving
+the real issues open - the entire framework is designed to create a "cycle" around
+the application. However developers must still implement their own "sub-cycles"
+and "isolation" inside their "pure apps".
 
-Despite its implementation flaws, Cycle has some great concepts. Maintaining 
+Despite its implementation flaws, Cycle has some great concepts. Maintaining
 those concepts and implementing them properly is the goal of **TSERS**:
 
 * `main` is just a signal transducer `input$ => output$`
@@ -75,7 +75,7 @@ const [Transducers, signal$, executor] = TSERS({
 })
 const { run } = Transducers
 executor(run(signal$, main(Transducers)))
-``` 
+```
 
 
 ## What is different compared to Cycle?
@@ -85,15 +85,15 @@ TSERS makes a clear distinction between signals and transducers:
 Cycle's `main` is:
 ```javascript
 const main = sources => sinks
-``` 
-Where `sources` can be either streams or transducers or stream generators or 
+```
+Where `sources` can be either streams or transducers or stream generators or
 combination of those and `sinks` are streams of signals going to the "outside world".
 
 TSERS' `main` is:
 ```javascript
 const main = Transducers => input$ => output$
-``` 
-Where `Transducers` is always a collection of signal transducer functions, 
+```
+Where `Transducers` is always a collection of signal transducer functions,
 `input$` is a stream of events coming from the "outside world" and `output$` is a
 stream of signals going to the "outside world".
 
@@ -111,8 +111,8 @@ TSERS' `main` driver is a function:
 function driver() {
   return [Transducers, signal$, executor: output$ => {}]
 }
-```  
-Where `signal$` is a stream of signals coming from the "outside world", 
+```
+Where `signal$` is a stream of signals coming from the "outside world",
 `Transducers` is a collection of transducer functions and `executor` is
 an interpreter that subscribes to the `output$` signals (= sinks in Cycle)
 and creates side-effects based on those signals.
@@ -120,8 +120,8 @@ and creates side-effects based on those signals.
 
 ## Usage
 
-TSERS provides only one public function via `default` exports. That function takes 
-an object of drivers and returns an array containing `Transducers`, `signal$` and 
+TSERS provides only one public function via `default` exports. That function takes
+an object of drivers and returns an array containing `Transducers`, `signal$` and
 `executor`.
 
 ```javascript
@@ -132,7 +132,7 @@ import main from "./your-app"
 const [Transducers, signals, executor] = TSERS({
   DOM: makeReactDOM("#app")
 })
-``` 
+```
 
 ### Signals
 
@@ -140,34 +140,34 @@ Signals are just a stream of events coming from the "outside world". These event
 can be anything: user keyboard clicks, mouse movements, messages from WebSockets,
 sounds from guitar pedals etc.
 
-The signal values are `{key, val}` objects where `val` contains the signal data 
-and `key` is the name of the driver that emitted the signal (e.g. `DOM`). It's 
-up to driver's implementation to decide whether it emits input signals or not - 
+The signal values are `{key, val}` objects where `val` contains the signal data
+and `key` is the name of the driver that emitted the signal (e.g. `DOM`). It's
+up to driver's implementation to decide whether it emits input signals or not -
 some  drivers might emit them (like web-socket driver) while others might not.
 
-### Transducers 
+### Transducers
 
-Transducers are the "switch army knife" that actually processes the input signals
-to output signals. Don't get distracted by the name: [a transducer](https://en.wikipedia.org/wiki/Transducer) 
+Transducers are the "swiss army knife" that actually processes the input signals
+to output signals. Don't get distracted by the name: [a transducer](https://en.wikipedia.org/wiki/Transducer)
 is just a function that transforms signals `a` to `b`:
 ```
 Transducer :: a$ => b$
 ```
 
-As you can notice, `main` is actually just another signal transducer. 
+As you can notice, `main` is actually just another signal transducer.
 Observable's `map`, `filter` and `flatMap` (for example) are also transducers.
 
 `Transducers` (from `TSERS`) is a JSON object that contains all transducers
-from drivers, grouped by drivers name (e.g. if you are using `DOM` driver then 
+from drivers, grouped by drivers name (e.g. if you are using `DOM` driver then
 you have for example `Transducers.DOM.events` transducer).
 
-TSERS provides also a small set of built-in transducers for common tasks. 
-The most important ones are: `decompose`, `run` and `compose`. 
+TSERS provides also a small set of built-in transducers for common tasks.
+The most important ones are: `decompose`, `run` and `compose`.
 
 #### `decompose :: (in$, ...keys) => [{[key]: [signals-of-key]}, rest$]`
 
-As told before, input signals are just a stream of key-value pairs.`decompose` is 
-a helper function meant to "extract" specific input signals from the rest. 
+As told before, input signals are just a stream of key-value pairs.`decompose` is
+a helper function meant to "extract" specific input signals from the rest.
 
 ![decompose](doc/decompose.png)
 
@@ -181,7 +181,7 @@ rest$.subscribe(::console.log)            // =>  {key: "lol", val: "bal"}
 
 #### `compose :: ({[key]: [signals-of-key]}, rest$ = O.never()) => output$`
 
-`compose` is the opposite of `decompose` - it maps the given input values to the 
+`compose` is the opposite of `decompose` - it maps the given input values to the
 `{key,val}` pairs based on the input template and merges them. For convenience, it also
 takes rest input signals (key-value pairs) as a second (optional) argument and
 merges them to the final output stream.
@@ -210,9 +210,9 @@ input signals and a transducer function producing `output$` and `loop$` signals
 array - `output$` signals are passed through as they are, but `loop$` signals
 are merged back to the transducer function as input signals.
 
-Note that you can nest `run` as much as you like! Before the `loop$` signals are 
-merged to the input, they are "masked" with (`ext=false`) key. This key ensures 
-that `loop$` signals are "private": parent's `loop$` signals can never appear 
+Note that you can nest `run` as much as you like! Before the `loop$` signals are
+merged to the input, they are "masked" with (`ext=false`) key. This key ensures
+that `loop$` signals are "private": parent's `loop$` signals can never appear
 as its child's `input$`.
 
 `run` accepts the return value in many formats: you can omit the second array
@@ -239,9 +239,9 @@ output$.subscribe(::console.log)  // => "tsers?!"
 ### Executor
 
 `executor` is like Cycle's `run` but it doesn't make signal proxying from
-`output$` back to `input$` (TSERS already has `run` for it!). Its only task 
-is to subscribe to the output signals, interpret them and execute the 
-side-effects if necessary. 
+`output$` back to `input$` (TSERS already has `run` for it!). Its only task
+is to subscribe to the output signals, interpret them and execute the
+side-effects if necessary.
 
 `executor` also ensures that output signals are routed correctly to their
 drivers' executors. Routing is done by using signal `key` signals having key `X`
@@ -253,13 +253,13 @@ const main = T => in$ => {
   return compose({
     DOM: vdom$,
     WS: message$
-  })  
+  })
 }
 
 const [T, signal$, execute] = TSERS({DOM: domDriver(), WS: wsDriver()})
 // vdom$ events are routed to "DOM" driver's executor
 // and message$ events are routed to "WS" driver's executor
-execute(T.run(singnal$, main(T))) 
+execute(T.run(singnal$, main(T)))
 ```
 
 `executor` returns a `dispose` function which can be called to dispose ("stop")
@@ -277,7 +277,7 @@ We know that:
 1. `signal$ = input$`
 2. `main :: Transducers => input$ => output$`
 3. `Tranducers.run :: (input$, input$ => [output$, loop$]) => output$`
-4. `executor :: output$ => dispose` 
+4. `executor :: output$ => dispose`
 
 Let's compose those:
 ```javascript
@@ -291,7 +291,7 @@ const [Transducers, signal$, executor] = TSERS({
 const { run } = Transducers
 
 const dispose = executor(run(signal$, main(Transducers)))
-``` 
+```
 
 Now you may understand why the signature of `main` is `Transducers => input$ => output$`:
 it allows you to pass down the transducers and use them at the same time without partial
@@ -300,17 +300,17 @@ application or currying. It's all about composition. It's TSERS!
 
 ## Model-View-Intent
 
-The one major difference between TSERS and Cycle is that TSERS implements the real `MVI` 
+The one major difference between TSERS and Cycle is that TSERS implements the real `MVI`
 whereas Cycle implements `IMV`. In practice this means that in Cycle apps, the border
 of **M**odel and **I**ntent becomes blurry when there is a cross-dependency between
 them. The simplest case is a form validation:
 
 1. In order to send the form to the server, you must have the form values (intent depends on model)
-2. In order to show an AJAX spinner during the validation, the send status must be 
+2. In order to show an AJAX spinner during the validation, the send status must be
 stored to the form (model depends on intent)
 
-Of course that is solvable with `IMV` and there are more or less elegant solutions 
-either leaking memory or not. In `MVI` however, there is no exception - you can 
+Of course that is solvable with `IMV` and there are more or less elegant solutions
+either leaking memory or not. In `MVI` however, there is no exception - you can
 **always** apply `MVI` and loop the model dependencies back to input by using `run`.
 
 ```javascript
@@ -318,7 +318,7 @@ const main = T => in$ => {
   const {DOM, HTTP, decompose, compose} = T
   const [actions] = decompose(in$, "validate$", "validated$")
   return intent(view(model(actions)))
-  
+
   function model({validate$, validated$}) {
     const form$ = validate$.map(toShowSpinnerMod)
       .merge(validated$.map(toAddValidationResultsAndRemoveSpinnerMod))
@@ -327,11 +327,11 @@ const main = T => in$ => {
       .shareReplay(1)
     return form$
   }
-  
+
   function view(form$) {
     return [form$, buildFormVDOM(form$)]
   }
-  
+
   function intent([form$, vdom$]) {
     const validate$ = DOM.events(vdom$, "button.validate", "click")
     const validated$ = HTTP.req(form$.sample(validate$).map(toReqObject)).switch()
@@ -352,21 +352,21 @@ TODO: examples
 
 ```javascript
 // compose :: ({[key]: [signals-of-key]}, rest$ = O.never()) => output$
- 
- 
+
+
 // decompose :: (in$, ...keys) => [{[key]: [signals-of-key]}, rest$]
 
 
-// extract :: (in$, key) => signals-of-key$ 
+// extract :: (in$, key) => signals-of-key$
 // == decompose(in$, key)[0][key]
- 
+
 // run :: (in$, (in$ => [out$, loop$])) => out$
 
 
 // decomposeLatest :: (out$$, ...keys) => [{[key]: [signals-of-key]}, rest$]
 const out$$ = form$.map(f => run(in$, Child(Transducers, f.childValue)))
 const [{DOM, value$}, rest$] = decomposeLatest(out$$, "DOM", "value$")
- 
+
 // listDecomposeLatest :: (outArr$, (val => out$), ...keys) => [{[key]: [signals-of-key]}, rest$]
 const persons$ = form$.map(f => f.persons)
 const [{DOM, value$}, rest$] = listDecomposeLatest(persons$, person => run(in$, Person(Transducers, person)),
