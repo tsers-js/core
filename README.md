@@ -259,7 +259,7 @@ const main = T => in$ => {
 const [T, signal$, execute] = TSERS({DOM: domDriver(), WS: wsDriver()})
 // vdom$ events are routed to "DOM" driver's executor
 // and message$ events are routed to "WS" driver's executor
-execute(T.run(singnal$, main(T)))
+execute(T.run(signal$, main(T)))
 ```
 
 `executor` returns a `dispose` function which can be called to dispose ("stop")
