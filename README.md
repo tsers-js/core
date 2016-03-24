@@ -37,8 +37,8 @@ those concepts and implementing them properly is the goal of **TSERS**:
 The mandatory "Hello world" written with TSERS:
 ```javascript
 import {Observable as O} from "rx"
-import TSERS as "@tsers/core"
-import makeReactDOM as "@tsers/react"
+import TSERS from "@tsers/core"
+import makeReactDOM from "@tsers/react"
 
 const main = T => in$ => {
   const {DOM: {h, prepare, events}, decompose, compose} = T
