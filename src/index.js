@@ -103,7 +103,8 @@ export function mapListBy(identity, list$, it, replay = ["DOM"]) {
         items.forEach((item, idx) => {
           const key = identity(item)
           if (!cache.contains(key)) {
-            cache.put(key, it(key, cache.get(key)), idx)
+            const proxy = makeProxy()
+            cache.put(key, it(key, proxy.asObservable()), idx, proxy)
           } else {
             cache.update(key, idx, item)
           }
@@ -116,6 +117,10 @@ export function mapListBy(identity, list$, it, replay = ["DOM"]) {
         return cache.list()
       })
   }).shareReplay(1)
+
+  function makeProxy(initial) {
+    return new Rx.BehaviorSubject(initial)
+  }
 }
 
 
@@ -128,7 +133,7 @@ extend(Cache.prototype, {
   contains(key) {
     return key in this.cache
   },
-  put(key, sinks, idx) {
+  put(key, sinks, idx, proxy) {
     const streams = {}
     const disposable = new Rx.CompositeDisposable()
     objKeys(sinks).map(name => {
@@ -140,19 +145,22 @@ extend(Cache.prototype, {
       key,
       streams,
       disposable,
-      idx
+      idx,
+      proxy
     }
   },
   get(key) {
     return this.cache[key].item
   },
-  update(key, idx) {
+  update(key, idx, item) {
     this.cache[key].idx = idx
+    this.cache[key].proxy.onNext(item)
   },
   del(key) {
     const cached = this.cache[key]
     if (cached) {
       delete this.cache[key]
+      cached.proxy.dispose()
       cached.disposable.dispose()
     }
   },

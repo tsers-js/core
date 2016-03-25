@@ -1,8 +1,12 @@
 import "should"
-import {Observable as O} from "rx"
-import {mux, demux, loop} from "../src/index"
+import Rx, {Observable as O} from "rx"
+import {mux, demux, loop, mapListBy} from "../src/index"
 
 const noop = () => undefined
+const keys = x => x ? Object.keys(x) : []
+
+const mapListById = mapListBy.bind(null, x => x.id)
+
 
 describe("common signal stransformers", () => {
 
@@ -75,6 +79,76 @@ describe("common signal stransformers", () => {
     it("passes 'error' messages", done => {
       const main = in$ => [in$, O.empty()]
       loop(O.throw(new Error("tsers")), main).subscribe(noop, () => done())
+    })
+  })
+
+  describe("mapListById", () => {
+    it("create item sub-streams only once", done => {
+      const list$ = O.of([{id: 1}], [{id: 1}], [{id: 1}, {id: 2}])
+      mapListById(list$, id => ({A: O.just(id)}))
+        .bufferWithTime(100)
+        .first()
+        .subscribe(
+          xs => xs.map(x => x.map(keys)).should.deepEqual([[["A"]], [["A"], ["A"]]]),
+          done.fail,
+          done
+        )
+    })
+    it("allows re-indexing items without re-creating sub-streams", done => {
+      const list$ = O.of([{id: 1}, {id: 2}], [{id: 1}, {id: 2}])
+      mapListById(list$, id => ({A: O.just(id)}))
+        .bufferWithTime(100)
+        .first()
+        .subscribe(
+          xs => xs.map(x => x.map(keys)).should.deepEqual([[["A"], ["A"]]]),
+          done.fail,
+          done
+        )
+    })
+    it("removes sub-streams when item is removed from the list", done => {
+      const list$ = O.of([{id: 1}], [])
+      mapListById(list$, id => ({A: O.just(id)}))
+        .bufferWithTime(100)
+        .first()
+        .subscribe(
+          xs => xs.map(x => x.map(keys)).should.deepEqual([[["A"]], []]),
+          done.fail,
+          done
+        )
+    })
+    it("disposes sub-streams when item is removed", done => {
+      const list$ = O.of([{id: 1}], []).merge(O.never())
+      mapListById(list$,
+        id => ({
+          A: O.just(id).finally(() => {
+            setTimeout(done, 100)
+          })
+        }))
+        .bufferWithTime(50)
+        .first()
+        .subscribe(
+          xs => xs.map(x => x.map(keys)).should.deepEqual([[["A"]], []]),
+          done.fail
+        )
+    })
+    it("makes inner streams hot", done => {
+      const list$ = O.of([{id: 1}])
+      mapListById(list$, id => ({A: O.just(id).do(() => done())}))
+        .subscribe(() => null, done.fail)
+    })
+    it("disposes all sub-streams when the mapped list stream is disposed", done => {
+      const s = new Rx.Subject()
+      const list$ = O.of([{id: 1}, {id: 2}])
+      const list$$ = O.just(list$).merge(O.just(O.never()).delay(10))
+
+      s.bufferWithCount(2).subscribe(ids => {
+        ids.should.deepEqual([1, 2])
+        done()
+      })
+      list$$.flatMapLatest(list$ => mapListById(list$, id => ({
+          A: O.just(id).finally(() => s.onNext(id))
+        })))
+        .subscribe(() => null, done.fail)
     })
   })
 
