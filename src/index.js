@@ -71,9 +71,9 @@ export function demux(out$, ...keys) {
 
 export function demuxCombined(list$$, ...keys) {
   const combine = k => list => list.length === 0 ? O.just([])
-    : O.combineLatest(...list.map(out$ => demux(out$, k)[0][k]))
-  const demuxed = keys.reduce((o, k) => (o[k] = list$$.flatMapLatest(combine(k))) && o, {})
-  const rest$ = list$$.flatMapLatest(list => O.merge(list.map(out$ => out$.filter(keyNotIn(keys)))))
+    : O.combineLatest(...list.map(out$ => from(out$, k)))
+  const demuxed = keys.reduce((o, k) => (o[k] = list$$.flatMapLatest(combine(k)).shareReplay(1)) && o, {})
+  const rest$ = list$$.flatMapLatest(list => O.merge(list.map(out$ => out$.filter(keyNotIn(keys))))).share()
   return [demuxed, rest$]
 }
 
