@@ -49,6 +49,8 @@ export default function TSERS(main, interpreters) {
 
   const noopd = {dispose: noop}
   const out$ = main(input)
+  if (!O.isObservable(out$))
+    throw new Error("Main must return an Observable")
   const [out] = demux(out$, ...objKeys(interpreters))
 
   return new Rx.CompositeDisposable(objKeys(out).map(key =>

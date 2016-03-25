@@ -17,6 +17,10 @@ describe("TSERS(main, interpreters)", () => {
     should.throws(() => TSERS(noop, {A}))
   })
 
+  it("throws an error if main doesn't return an observable", () => {
+    should.throws(() => TSERS(() => "tsers", {A: interpreter(noop)}))
+  })
+
   it("combines the inputs/transforms from interpreters by key", done => {
     const A = {}, B = {}
     TSERS(main, {
