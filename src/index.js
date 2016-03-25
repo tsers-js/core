@@ -18,8 +18,8 @@ const keyNotIn = keys => {
 const from = (in$, key) =>
   in$.filter(s => s.key === key).map(s => s.val)
 
-const to = (out$, key, ext) =>
-  out$.map(val => ({key, val, ext}))
+const to = (out$, key) =>
+  out$.map(val => ({key, val}))
 
 const mapValuesWhen = (obj, fn) =>
   objKeys(obj).reduce((o, k) => {
@@ -59,7 +59,7 @@ export default function TSERS(main, interpreters) {
 }
 
 export function mux(input, rest$) {
-  const muxed$ = O.merge(...objKeys(input).map(k => to(input[k], k, true)))
+  const muxed$ = O.merge(...objKeys(input).map(k => to(input[k], k)))
   return rest$ ? muxed$.merge(rest$) : muxed$
 }
 
