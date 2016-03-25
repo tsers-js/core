@@ -1,6 +1,6 @@
 import "should"
 import Rx, {Observable as O} from "rx"
-import {mux, demux, loop, mapListBy} from "../src/index"
+import {mux, demux, loop, mapListBy, demuxCombined} from "../src/index"
 
 const noop = () => undefined
 const keys = x => x ? Object.keys(x) : []
@@ -8,7 +8,7 @@ const keys = x => x ? Object.keys(x) : []
 const mapListById = mapListBy.bind(null, x => x.id)
 
 
-describe("common signal stransformers", () => {
+describe("common signal transformers", () => {
 
   describe("demux(out$, ...keys)", () => {
     it("decomposes streams to object of streams of given keys and rest output", done => {
@@ -82,7 +82,7 @@ describe("common signal stransformers", () => {
     })
   })
 
-  describe("mapListById", () => {
+  describe("mapListById(list$, iterator, replay)", () => {
     it("create item sub-streams only once", done => {
       const list$ = O.of([{id: 1}], [{id: 1}], [{id: 1}, {id: 2}])
       mapListById(list$, id => ({A: O.just(id)}))
@@ -149,6 +149,60 @@ describe("common signal stransformers", () => {
           A: O.just(id).finally(() => s.onNext(id))
         })))
         .subscribe(() => null, done.fail)
+    })
+  })
+
+  describe("demuxCombined(list$$, ...keys)", () => {
+    it("demuxes the streams by using given keys", () => {
+      const list$$ = O.empty()
+      const [out, rest$] = demuxCombined(list$$, "A", "B")
+      Object.keys(out).should.deepEqual(["A", "B"])
+      out.A.should.be.instanceof(O)
+      out.B.should.be.instanceof(O)
+      rest$.should.be.instanceof(O)
+    })
+    it("combines the latest value of the demuxed list", done => {
+      const list$$ = O.merge(
+        O.just([mux({A: O.of("a1_1"), B: O.of("b1_1")}), mux({A: O.of("a1_21", "a1_22"), B: O.of("b1_2")})]),
+        O.just([mux({A: O.of("a2_1"), B: O.of("b2_1")}), mux({A: O.of("a2_2"), B: O.of("b2_2")})]).delay(1)
+      )
+      const [out] = demuxCombined(list$$, "A")
+      out.A.bufferWithCount(3).subscribe(x => {
+        x.should.deepEqual([
+          ["a1_1", "a1_21"],
+          ["a1_1", "a1_22"],
+          ["a2_1", "a2_2"]
+        ])
+        done()
+      })
+    })
+    it("flattens and merges the rest of signals into one stream", done => {
+      const list$$ = O.merge(
+        O.just([mux({A: O.of("a1_1"), B: O.of("b1_1")}), mux({A: O.of("a1_21", "a1_22"), B: O.of("b1_2")})]),
+        O.just([mux({A: O.of("a2_1"), B: O.of("b2_1")}), mux({A: O.of("a2_2"), B: O.of("b2_2")})]).delay(1)
+      )
+      const [_, rest$] = demuxCombined(list$$, "A")
+      rest$.bufferWithTime(100).first().subscribe(x => {
+        x.should.deepEqual([
+          {key: "B", val: "b1_1"},
+          {key: "B", val: "b1_2"},
+          {key: "B", val: "b2_1"},
+          {key: "B", val: "b2_2"}
+        ])
+        done()
+      })
+    })
+    it("handles empty lists", done => {
+      const list$$ = O.merge(
+        O.just([]),
+        O.just([mux({A: O.of("a1")}), mux({A: O.of("a2")})]).delay(1),
+        O.just([]).delay(10)
+      )
+      const [out] = demuxCombined(list$$, "A")
+      out.A.bufferWithCount(3).subscribe(x => {
+        x.should.deepEqual([[], ["a1", "a2"], []])
+        done()
+      })
     })
   })
 
