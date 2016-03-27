@@ -1,6 +1,6 @@
 {
   "name": "@tsers/core",
-  "version": "1.0.0-rc1",
+  "version": "1.0.0-rc2",
   "private": false,
   "description": "Transducer-Signal-Executor framework for Reactive Streams",
   "main": "dist/tsers.core.js",
