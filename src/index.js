@@ -87,8 +87,8 @@ export function loop(input$, main) {
   return out$.merge(loop$.filter(val => lo && lo.onNext(val) && false)).share()
 }
 
-export function mapListBy(identity, list$, it, replay = ["DOM"]) {
-  return O.using(() => new Cache(replay), cache => {
+export function mapListBy(identity, list$, it) {
+  return O.using(() => new Cache(), cache => {
     return list$
       .distinctUntilChanged(items => items.map(item => identity(item)), (a, b) => {
         if (a.length !== b.length) return false
@@ -128,26 +128,20 @@ export function mapListBy(identity, list$, it, replay = ["DOM"]) {
 }
 
 
-function Cache(toReplay) {
+function Cache() {
   this.cache = {}
-  this.toReplay = toReplay.reduce((acc, k) => (acc[k] = true) && acc, {})
 }
 
 extend(Cache.prototype, {
   contains(key) {
     return key in this.cache
   },
-  put(key, sinks, idx) {
-    const streams = {}
-    const disposable = new Rx.CompositeDisposable()
-    objKeys(sinks).map(name => {
-      const sink$ = this.toReplay[name] ? sinks[name].replay(null, 1) : sinks[name].publish()
-      disposable.add(sink$.connect())
-      streams[name] = sink$
-    })
+  put(key, output$, idx) {
+    const out$ = output$.replay(null, 1)
+    const disposable = out$.connect()
     this.cache[key] = {
       key,
-      streams,
+      out$,
       disposable,
       idx
     }
@@ -168,10 +162,9 @@ extend(Cache.prototype, {
   list() {
     const list = objKeys(this.cache).map(k => this.cache[k])
     list.sort((a, b) => a.idx - b.idx)
-    return list.map(x => x.streams)
+    return list.map(x => x.out$)
   },
   dispose() {
-    this.toReplay = []
     objKeys(this.cache).forEach(key => {
       this.del(key)
     })
