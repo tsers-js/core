@@ -80,11 +80,14 @@ export function demuxCombined(list$$, ...keys) {
 export function loop(input$, main) {
   let lo = null
   const in$ = input$
-    .doOnCompleted(() => lo && lo.onCompleted() && (lo = null))
     .merge(O.create(o => (lo = o) && (() => lo = null)))
+    .doOnCompleted(() => lo && lo.onCompleted() && (lo = null))
     .share()
   const [out$, loop$] = main(in$)
-  return out$.merge(loop$.filter(val => lo && lo.onNext(val) && false)).share()
+  const lo$ = loop$
+    .doOnCompleted(() => lo && lo.onCompleted())
+    .filter(val => lo && lo.onNext(val) && false)
+  return out$.merge(lo$).share()
 }
 
 export function mapListBy(identity, list$, it) {
