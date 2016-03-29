@@ -1,6 +1,6 @@
 {
   "name": "@tsers/core",
-  "version": "1.0.0-rc3",
+  "version": "1.0.0",
   "private": false,
   "description": "Transducer-Signal-Executor framework for Reactive Streams",
   "main": "dist/tsers.core.js",
@@ -13,8 +13,7 @@
   "keywords": [
     "rxjs",
     "reactive",
-    "TSERS",
-    "cyclejs"
+    "TSERS"
   ],
   "scripts": {
     "prepublish": "npm test && npm run dist",
