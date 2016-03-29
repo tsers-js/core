@@ -38,14 +38,14 @@ Cycle - the best from both worlds.
 
 Signals are the backbone of `TSERS` application. They are the only way to
 transfer inter-app information and information from `main` to interpreters 
-and vice versa. In `TSERS` applications, signals are (RxJS) observables. 
+and vice versa. In `TSERS` applications, signals are modeled as (RxJS) observables. 
 
-* Observables are immutable so the defined signal flow is always
+* Observables are immutable so the defined control flow is always
 explicit and declarative
 * Observables are first-class objects so they can be transformed into
 other observables easily by using higher-order functions
 
-TSERS relies entirely on (RxJS) observables and reactive programming,
+TSERS relies entirely on (RxJS) observables and reactive programming
 so if those concepts are not familiar, you should take a look at some
 online resources or books before exploring TSERS. One good online tutorial
 to RxJS can be found **[here](https://gist.github.com/staltz/868e7e9bc2a7b8c1f754)**.
@@ -63,10 +63,9 @@ The signature of signal transform function `f` is:
 f :: (Observable A, ...params) => Observable B
 ```
 
-So basically it's just a pure function that transforms (referentially 
-transparently) an observable into another observable. So all 
-observable's higher order functions like `map`, `filter`, `scan` 
-(just to name a few) are also signal transformers.
+So basically it's just a pure function that transforms an observable into 
+another observable. So all observable's higher order functions like `map`, 
+`filter`, `scan` (just to name a few) are also signal transformers.
 
 Let's take another example:
 ```js
@@ -77,8 +76,8 @@ function titlesWithPrefix(item$, prefix) {
 }
 ```
 
-Now `titlesWithPrefix` is also a signal transform function: it takes
-an observable of items and the prefix that must be matched and returns 
+`titlesWithPrefix` is also a signal transform function: it takes
+an observable of items and the prefix that must match the item title and returns 
 an observable of item titles having the given prefix.
 ```
 titlesWithPrefix :: (Observable Item, String) => Observable String
@@ -87,7 +86,7 @@ titlesWithPrefix :: (Observable Item, String) => Observable String
 And as you can see, `titlesWithPrefix` used internally two other signal
 transform functions: `map` and `filter`. Because signal transform functions
 are pure, it's trivial to compose and reuse them in order to create the
-desired signal flow from `input` signals to `output` signals.
+desired control flow from `input` signals to `output` signals.
 
 If the signals are the backbone of `TSERS` applications, signal transformers
 are the muscles around it and moving it.
@@ -97,7 +96,7 @@ are the muscles around it and moving it.
 After flowing through the pure signal transformers, the transformed 
 `output` signals arrive to the **executors**. In `TSERS`, executors
 are also functions. But **not pure**. They are functions that do nasty
-things, cause side-effects and change state. That is, executors' signature
+things: cause side-effects and change state. That is, executors' signature
 looks like this:
 ```
 executor :: Observable A => Effects
@@ -112,11 +111,11 @@ function alertNewTitles(title$) {
 }
 ```
 
-And what this makes executors in our human analogy... signals flowing through
-the spine down and down and finally to the... *anus*. Yeah, unfortunately
-somewhere in the application you must do the crappy part: render DOM to the
-browser window, modify the global state etc. In `TSERS` applications, this
-part falls down to executors.
+And what this makes executors by using the previous analogy... signals 
+flowing through the backbone down and down and finally to the... *anus* :hankey:. 
+Yeah, unfortunately the reality is that somewhere in the application you 
+must do the crappy part: render DOM to the browser window, modify the global 
+state etc. In `TSERS` applications, this part falls down to executors.
 
 But the good news is that these crappy things are (usually) not application
 specific and easily generalizable! That's why `TSERS` has the **interpreter
@@ -151,8 +150,9 @@ are passed to the interpreters' executor functions.
 
 That is, `main` is just another signal transform function that receives
 some core transform functions (explained later) plus input signals and
-other transform functions from interpreters that can be used to define
-the interactions and the control flow.
+other transform functions from interpreters. By using those signals and
+transforms, `main` is able to produce the output signals that are consumed
+by the interpreter executors.
 
 ### Interpreters
 
@@ -192,7 +192,7 @@ time when the click happens but returns a cached result instead! It's not
 Some interactions may produce output signals that are not interesting in
 `main`. That's why interpreters have also possibility to define an **executor**
 function which receives those output signals and *interprets* them, 
-(usually) causing some effects defined by the interpreter. 
+(usually) causing some (side-)effects. 
 
 Let's take the `DOM` interpreter as an example. `main` may produce virtual
 dom elements as output signals but it's not interested in how (or where) 
@@ -213,22 +213,23 @@ effects. Usually this reduces into three main cases:
 2. You need to communicate with the external world somehow
 3. You need to change some global state
 
-#### When to perform side-effects with signal transform functions and when with executor
+#### Encoding side-effects into signal transforms or output signals?
 
-In a rule of thumb, you should perform the side-effects with signal transform
+In a rule of thumb, you should encode the side-effects into signal transform
 functions if the input signal and the side effect result signal have a 
-**direct causation**, for example `HTTP request => response`.
+**direct causation**, for example `request => response`.
 
-You should perform the side-effects with `executor` function when the input signal
-doesn't cause any output signals (only effects), for example `VDOM => ()` 
+You should encode the side-effects into output signals and interpret them with
+the `executor` when the input there is no input => output causation (only 
+effects), for example `VNode => ()`.
 
 ### Why the separation of `main` and interpreters?
 
 You may think that the separation of `main` and interpreters is just waste.
-What benefit you get by doing that?
+What benefit you get by doing that? The answer is that separating those 
+significantly improves *testability, extensibility and the separation 
+of concerns* of the application.
 
-The answer is that separating those significantly improves *testability, 
-extensibility and the separation of concerns* of the application.
 Imagine that you need to implement universal server rendering to your 
 application - just change the `DOM` interpreter to server `DOM` interpreter
 that produces HTML strings instead of rendering the virtual dom to the
@@ -240,7 +241,6 @@ interpreter to keep state revisions in memory. How about if you API version
 changes? Just modify you API interpreter to convert the new version data
 to the current one.
 
-The list could continue forever...
 
 ## From theory to practice 
 
@@ -284,7 +284,7 @@ TSERS(main, {
 Now we can use the signals and transforms provided by those interpreters,
 as well as TSERS's core transform functions (see API reference below).
 Interpreters' signals and transform functions are always accessible by their
-keys. Also output signals must use the those keys:
+keys. Also `main`'s output signals match those keys:
 ```js
 function main(signals) {
   // All core transforms (like "mux") are also accessible 
@@ -341,18 +341,19 @@ Cycle very much. Technically that's true. Then why not to use Cycle?
 Although the technical implementations of TSERS and Cycle are very similar,
 their ideologies are not. Cycle is strongly driven by the classification of
 **read-effects** and **write-effects** which means that drivers are not 
-"allowed" to provide signal transforms that produce side-effects. Instead,
+"allowed" to provide signal transforms encoding side-effects. Instead,
 all side effects must go to sinks and their results must be read from the
 sources, regardless of the causation of the side-effect and it's input.
 
 Cycle's drivers are also meant for external world communications
-**only**, hence e.g. maintaining the global application state is not 
-the drivers' job (although maintaining it with e.g. Relay is!!).
+**only**, hence e.g. maintaining the global application state with 
+drivers is not "allowed" in Cycle (although maintaining it with e.g. Relay 
+driver is!!).
 
 In practice, those features in Cycle result in some unnecessary symptoms like
 the existence of [isolation](https://github.com/cyclejs/isolate), usage of `IMV` 
-instead of `MVI` (which works pretty well btw, until you have to access the model from
-the intents), [proxy subjects](https://github.com/cyclejs/examples/blob/master/advanced-list/src/app.js#L65)
+instead of `MVI` (which works pretty well btw, until your intents start to depend
+on the model), [proxy subjects](https://github.com/cyclejs/examples/blob/master/advanced-list/src/app.js#L65)
 usage, [performance issues](https://github.com/cyclejs/todomvc-cycle/issues/22)
 and [unnecessary complexity](https://gist.github.com/milankinen/cb0e898ae52c61e8d5da)
 whe sharing the state between parent and child components.
@@ -368,8 +369,8 @@ JavaScript allows function to return only one value. That means that `main` can
 return only one observable of signals. However, applications usually produce 
 multiple types of signals (DOM, WebSocket messages, model state changes...).
 
-That's why TSERS a way to [multiplex](https://en.wikipedia.org/wiki/Multiplexing).
-Multiple types of signals into single observable. Multiplexing is way of merging 
+That's why TSERS uses [multiplexing](https://en.wikipedia.org/wiki/Multiplexing) to
+"combine" multiple types of signals into single observable. Multiplexing is way of combining 
 multiple signal streams into one stream of signals so that different type of 
 signals are identifiable from other signals. 
 
@@ -380,10 +381,10 @@ mux :: ({signalKey: signal$}, otherMuxed$ = Observable.empty()) => muxedSignal$
 
 `mux` takes the multiplexed streams as an object so that object's keys represent the 
 type of the multiplexed signals. `mux` takes also second (optional) parameter, that
-is a stream of already muxed other signals (coming usually from child components)
-and merged it to output.
+is a stream of already muxed other signals (coming usually from the child components)
+and merges it to output.
 
-Usually you want to use `mux` in the end of the main to combine all application
+Usually you want to use `mux` in the end of `main` to combine all application
 signals into single observable of signals:
 ```js
 function main({DOM, model$}) {
@@ -398,14 +399,15 @@ function main({DOM, model$}) {
 ### `demux` 
 
 De-muxing (or de-multiplexing) is the reverse operation for muxing: it takes
-an observable of muxed signals, extracts the given signals by their keys and
+an observable of the muxed signals, extracts the given signal types by their keys and
 returns also the rest of the signals that were not multiplexed
 ```
 demux :: (muxedSignal$, ...keys) => [{signalKey: signal$}, otherMuxed$]
 ```
 
-Usually you want to use this when you call child application inside other
-application and want to post-process its specific output signals (e.g. DOM):
+Usually you want to use this when you call child component from the parent
+component and want to post-process child's specific output signals (e.g. DOM)
+in the parent component:
 ```js
 const childOut$ = Counter({...signals, model$: childModel$})
 const [{DOM: childDOM$}, rest$] = demux(childOut$, "DOM")
