@@ -1,6 +1,6 @@
 # TSERS
 
-**T**ransducer-**S**ignal-**E**xecutor framework for **R**eactive **S**treams
+**T**ransform-**S**ignal-**E**xecutor framework for **R**eactive **S**treams
 (RxJS only at the moment... :disappointed:).
 
 [![Travis Build](https://img.shields.io/travis/tsers-js/core/master.svg?style=flat-square)](https://travis-ci.org/tsers-js/core)
@@ -11,369 +11,469 @@
 
 > "tsers!"
 
-
 ## Motivation
 
-*What if your application was just a pure function?* That's a very interesting
-idea introduced by [Cycle.js](http://cycle.js.org/). Although the idea is nice,
-the actual implementation of Cycle is not. The development is driven by vague
-concepts such as "read/write effects" and "pureness" of the `main`, resulting
-inconsistency in driver implementations (even among the official ones!) and leaving
-the real issues open - the entire framework is designed to create a "cycle" around
-the application. However developers must still implement their own "sub-cycles"
-and "isolation" inside their "pure apps".
+In the era of the JavaScript fatigue, new JS frameworks pop up like mushrooms
+after the rain, each of them providing some new and revolutionary concepts. 
+So overwhelming! That's why TSERS was created. **It doesn't provide anything
+new.** Instead, it combines some old and well-known techniques/concepts
+and packs them into single compact form suitable for the modern web application
+development.
 
-Despite its implementation flaws, Cycle has some great concepts. Maintaining
-those concepts and implementing them properly is the goal of **TSERS**:
+Technically the closest relative to TSERS is **[Cycle.js](http://cycle.js.org)**,
+but conceptually the closest one is **[CALM^2](https://github.com/calmm-js)**. 
+Roughly it could be said that TSERS tries to combine the excellent state consistency 
+maintaining strategies from CALM^2 and explicit input/output gates from
+Cycle - the best from both worlds.
 
-* `main` is just a signal transducer `input$ => output$`
-* Drivers encapsulate the side-effects
-* `Model-View-Intent` instead of `Intent-Model-View`
-* No impure "isolation", just pure signal processing by using `filter` and `map`
-* Declarative and explicit
+## Core concepts
 
-## Hello world
+`TSERS` applications are built upon the three following concepts
 
-The mandatory "Hello world" written with TSERS:
-```javascript
-import {Observable as O} from "rx"
-import TSERS from "@tsers/core"
-import makeReactDOM from "@tsers/react"
-
-const main = T => in$ => {
-  const {DOM: {h, prepare, events}, decompose, compose} = T
-
-  const [actions] = decompose(in$, "append$")
-  return intent(view(model(actions)))
-
-  function model({append$}) {
-    const msg$ = append$
-      .startWith("Tsers")
-      .scan((acc, s) => acc + s)
-    return msg$
-  }
-
-  function view(msg$) {
-    const vdom$ = msg$.map(msg =>
-      h("div", [
-        h("h1", msg),
-        h("button.add", "Click me!")
-      ]))
-    return prepare(vdom$)
-  }
-
-  function intent(vdom$) {
-    const append$ = events(vdom$, ".add", "click").map(() => "!")
-    const loop$ = compose({append$})
-    const out$ = compose({DOM: vdom$})
-    return [out$, loop$]
-  }
-}
-
-const [Transducers, signal$, executor] = TSERS({
-  DOM: makeReactDOM("#app")
-})
-const { run } = Transducers
-executor(run(signal$, main(Transducers)))
-```
-
-
-## What is different compared to Cycle?
-
-TSERS makes a clear distinction between signals and transducers:
-
-Cycle's `main` is:
-```javascript
-const main = sources => sinks
-```
-Where `sources` can be either streams or transducers or stream generators or
-combination of those and `sinks` are streams of signals going to the "outside world".
-
-TSERS' `main` is:
-```javascript
-const main = Transducers => input$ => output$
-```
-Where `Transducers` is always a collection of signal transducer functions,
-`input$` is a stream of events coming from the "outside world" and `output$` is a
-stream of signals going to the "outside world".
-
-And same applies for drivers. Cycle driver is a function:
-```javascript
-function driver(sink$) {
-  return sources
-}
-```
-Where `sink$` is a stream of signals coming from sinks and sources can be
-either streams or transducers or stream generators or combination of those.
-
-TSERS' `main` driver is a function:
-```javascript
-function driver() {
-  return [Transducers, signal$, executor: output$ => {}]
-}
-```
-Where `signal$` is a stream of signals coming from the "outside world",
-`Transducers` is a collection of transducer functions and `executor` is
-an interpreter that subscribes to the `output$` signals (= sinks in Cycle)
-and creates side-effects based on those signals.
-
-
-## Usage
-
-TSERS provides only one public function via `default` exports. That function takes
-an object of drivers and returns an array containing `Transducers`, `signal$` and
-`executor`.
-
-```javascript
-import TSERS from "@tsers/core"
-import makeReactDOM from "@tsers/react"
-import main from "./your-app"
-
-const [Transducers, signals, executor] = TSERS({
-  DOM: makeReactDOM("#app")
-})
-```
+1. **Signals** flowing through the application
+2. Signal **Transform** functions transforming `input` signals into `output` signals
+3. **Executors** performing effects based on the `output` signals
 
 ### Signals
 
-Signals are just a stream of events coming from the "outside world". These events
-can be anything: user keyboard clicks, mouse movements, messages from WebSockets,
-sounds from guitar pedals etc.
+Signals are the backbone of `TSERS` application. They are the only way to
+transfer inter-app information and information from `main` to interpreters 
+and vice versa. In `TSERS` applications, signals are modeled as (RxJS) observables. 
 
-The signal values are `{key, val}` objects where `val` contains the signal data
-and `key` is the name of the driver that emitted the signal (e.g. `DOM`). It's
-up to driver's implementation to decide whether it emits input signals or not -
-some  drivers might emit them (like web-socket driver) while others might not.
+* Observables are immutable so the defined control flow is always
+explicit and declarative
+* Observables are first-class objects so they can be transformed into
+other observables easily by using higher-order functions
 
-### Transducers
+TSERS relies entirely on (RxJS) observables and reactive programming
+so if those concepts are not familiar, you should take a look at some
+online resources or books before exploring TSERS. One good online tutorial
+to RxJS can be found **[here](https://gist.github.com/staltz/868e7e9bc2a7b8c1f754)**.
 
-Transducers are the "swiss army knife" that actually processes the input signals
-to output signals. Don't get distracted by the name: [a transducer](https://en.wikipedia.org/wiki/Transducer)
-is just a function that transforms signals `a` to `b`:
+`TODO: muxing and demuxing`
+
+### Signal transforms
+
+Assuming you are somehow familiar with RxJS (or some other reactive
+library like Kefir or Bacon.js), you've definitely familiar with **signal
+transform** functions.
+
+The signature of signal transform function `f` is:
 ```
-Transducer :: a$ => b$
-```
-
-As you can notice, `main` is actually just another signal transducer.
-Observable's `map`, `filter` and `flatMap` (for example) are also transducers.
-
-`Transducers` (from `TSERS`) is a JSON object that contains all transducers
-from drivers, grouped by drivers name (e.g. if you are using `DOM` driver then
-you have for example `Transducers.DOM.events` transducer).
-
-TSERS provides also a small set of built-in transducers for common tasks.
-The most important ones are: `decompose`, `run` and `compose`.
-
-#### `decompose :: (in$, ...keys) => [{[key]: [signals-of-key]}, rest$]`
-
-As told before, input signals are just a stream of key-value pairs.`decompose` is
-a helper function meant to "extract" specific input signals from the rest.
-
-![decompose](doc/decompose.png)
-
-```javascript
-const input$ = O.of({key: "Foo", val: "foo!"}, {key: "Bar", val: "bar"}, {key: "Foo", val: "foo?"}, {key: "lol", val: "bal"})
-const [decomposed, rest$] = decompose(input$, "Foo", "Bar")
-decomposed.Foo.subscribe(::console.log)   // => "foo!", "foo?"
-decomposed.Bar.subscribe(::console.log)   // => "bar"
-rest$.subscribe(::console.log)            // =>  {key: "lol", val: "bal"}
+f :: (Observable A, ...params) => Observable B
 ```
 
-#### `compose :: ({[key]: [signals-of-key]}, rest$ = O.never()) => output$`
+So basically it's just a pure function that transforms an observable into 
+another observable. So all observable's higher order functions like `map`, 
+`filter`, `scan` (just to name a few) are also signal transformers.
 
-`compose` is the opposite of `decompose` - it maps the given input values to the
-`{key,val}` pairs based on the input template and merges them. For convenience, it also
-takes rest input signals (key-value pairs) as a second (optional) argument and
-merges them to the final output stream.
-
-![compose](doc/compose.png)
-```javascript
-const foo$ = O.just("foo!")
-const bar$ = O.just("bar..")
-const rest$ = O.just({key: "lol", value: "bal"})
-const out$ = compose({Foo: foo$, Bar: bar$}, rest$)
-out$.subscribe(::console.log)   // => {key: "Foo", val: "foo!"}, {key: "Bar", val: "bar.."}, {key: "lol", val: "bal"}
-```
-
-Also note that `compose` and `decompose` are transitive:
-```javascript
-const input$ = ...
-const keys = [ ... ]
-const output$ = compose(...decompose(input$, ...keys))
-// output$ and input$ streams produce same values
-```
-
-#### `run :: (input$, (input$ => [output$, loop$]) => output$`
-
-`run` is the way to loop signals from downstream back to upstream. It takes
-input signals and a transducer function producing `output$` and `loop$` signals
-array - `output$` signals are passed through as they are, but `loop$` signals
-are merged back to the transducer function as input signals.
-
-Note that you can nest `run` as much as you like! Before the `loop$` signals are
-merged to the input, they are "masked" with (`ext=false`) key. This key ensures
-that `loop$` signals are "private": parent's `loop$` signals can never appear
-as its child's `input$`.
-
-`run` accepts the return value in many formats: you can omit the second array
-element and return only `[output$]` without `loop$` signals (equivalent to
-`[output$, O.never()]`. You can also return plain `output$` stream which is equivalent
-to `[output$]`.
-
-
-![run](doc/run.png)
-```javascript
-const input$ = compose({Foo: O.just("tsers")}, O.never(), true)
-const main = input$ => {
-  const [{Bar: bar$, Foo: foo$}] = decompose(input$, "Bar", "Foo")
-  const output$ = bar$.map(x => x + "!")
-  const loop$ = compose({Bar: foo$.map(x => x + "?")})
-  return [output$, loop$]
+Let's take another example:
+```js
+function titlesWithPrefix(item$, prefix) {
+  return item$
+    .map(it => it.title)
+    .filter(title => title.indexOf(prefix) === 0)
 }
-
-const output$ = run(input$, main)
-output$.subscribe(::console.log)  // => "tsers?!"
 ```
 
+`titlesWithPrefix` is also a signal transform function: it takes
+an observable of items and the prefix that must match the item title and returns 
+an observable of item titles having the given prefix.
+```
+titlesWithPrefix :: (Observable Item, String) => Observable String
+``` 
 
-### Executor
+And as you can see, `titlesWithPrefix` used internally two other signal
+transform functions: `map` and `filter`. Because signal transform functions
+are pure, it's trivial to compose and reuse them in order to create the
+desired control flow from `input` signals to `output` signals.
 
-`executor` is like Cycle's `run` but it doesn't make signal proxying from
-`output$` back to `input$` (TSERS already has `run` for it!). Its only task
-is to subscribe to the output signals, interpret them and execute the
-side-effects if necessary.
+If the signals are the backbone of `TSERS` applications, signal transformers
+are the muscles around it and moving it.
 
-`executor` also ensures that output signals are routed correctly to their
-drivers' executors. Routing is done by using signal `key` signals having key `X`
-are routed to driver `X` and so on.
+### Executors
 
-```javascript
-const main = T => in$ => {
-  ...
-  return compose({
-    DOM: vdom$,
-    WS: message$
+After flowing through the pure signal transformers, the transformed 
+`output` signals arrive to the **executors**. In `TSERS`, executors
+are also functions. But **not pure**. They are functions that do nasty
+things: cause side-effects and change state. That is, executors' signature
+looks like this:
+```
+executor :: Observable A => Effects
+``` 
+
+Let's write an executor for our titles:
+```js
+function alertNewTitles(title$) {
+  title$.subscribe(title => {
+    alert(`Got new title! ${title}`)
   })
 }
-
-const [T, signal$, execute] = TSERS({DOM: domDriver(), WS: wsDriver()})
-// vdom$ events are routed to "DOM" driver's executor
-// and message$ events are routed to "WS" driver's executor
-execute(T.run(signal$, main(T)))
 ```
 
-`executor` returns a `dispose` function which can be called to dispose ("stop")
-the execution:
-```javascript
-const dispose = execute(output$)
-setTimeout(dispose, 1000)  // stop after 1 sec
+And what this makes executors by using the previous analogy... signals 
+flowing through the backbone down and down and finally to the... *anus* :hankey:. 
+Yeah, unfortunately the reality is that somewhere in the application you 
+must do the crappy part: render DOM to the browser window, modify the global 
+state etc. In `TSERS` applications, this part falls down to executors.
+
+But the good news is that these crappy things are (usually) not application
+specific and easily generalizable! That's why `TSERS` has the **interpreter
+abstraction**.
+
+## Application structure 
+
+As told before, every application inevitably contains good parts and bad
+parts. And that's why `TSERS` tries to create an explicit border between
+those parts: the **interpreter abstraction**.
+
+The good (pure) parts are inside the signal transform function `main`,
+and the bad parts are encoded into interpreters. 
+
+Conceptually the full application structure looks like:
+```js
+function main(input$) {
+  // ... app logic ...
+  return output$
+}
+interpreters = makeInterpreters()
+output$ = main(interpreters.signals())
+interpreters.execute(output$)
 ```
 
+### `main` 
 
-### Running the app
+`main` function is the place where you should put the application logic
+in `TSERS` application. It describes the user interactions and as a result
+of those interactions, provides an observable of output signals that
+are passed to the interpreters' executor functions.
 
-We know that:
+That is, `main` is just another signal transform function that receives
+some core transform functions (explained later) plus input signals and
+other transform functions from interpreters. By using those signals and
+transforms, `main` is able to produce the output signals that are consumed
+by the interpreter executors.
 
-1. `signal$ = input$`
-2. `main :: Transducers => input$ => output$`
-3. `Tranducers.run :: (input$, input$ => [output$, loop$]) => output$`
-4. `executor :: output$ => dispose`
+### Interpreters
 
-Let's compose those:
-```javascript
+Interpreters are not a new concept: they come from the 
+**[Free Monad Pattern](https://gist.github.com/CMCDragonkai/165d9a598b8fb333ea65)**.
+In common language (and rounding some edges) interpreters are an API
+that separates the representation from the actual computation. If you
+are interested in Free Monads, I recommend to read 
+[this article](http://underscore.io/blog/posts/2015/04/14/free-monads-are-simple.html). 
+
+In `TSERS`, interpreters consist of two parts:
+
+1. Input signals and/or signal transforms
+2. Executor function
+
+Input signals and signal transforms are given to the `main`. They are 
+a way for interpreter to encapsulate the computation from the representation.
+For example `HTTP` interpreter provides the `request` transform. It takes
+an observable of request params and returns an observable of request observables
+(`request :: Observable params => Observable (Observable respose)`).
+
+Now the `main` can use that transform:
+```js
+function main({HTTP}) {
+  const click$ = ....
+  const users$ = HTTP.request(click$.map(() => ({url: "/users", method: "get"})).switch()
+  // ...
+}
+```
+
+Note that `main` doesn't need to know the actual details what happens inside
+`request` - it might create the request by using vanilla JavaScript, 
+`superagent` or any other JS library. It may not even make a HTTP request every
+time when the click happens but returns a cached result instead! It's not
+`main`'s business to know such things.
+
+Some interactions may produce output signals that are not interesting in
+`main`. That's why interpreters have also possibility to define an **executor**
+function which receives those output signals and *interprets* them, 
+(usually) causing some (side-)effects. 
+
+Let's take the `DOM` interpreter as an example. `main` may produce virtual
+dom elements as output signals but it's not interested in how (or where) 
+those virtual dom elements are rendered.
+```js
+function main({DOM}) {
+  const {h} = DOM 
+  return DOM.prepare(Observable.just(h("h1", "Tsers!")))
+}
+```
+
+#### What to put into `main` and what into interpreters?
+
+In a rule of thumb, you should use interpreter if you need to produce some
+effects. Usually this reduces into three main cases:
+
+1. You need to use Observable's `.subscribe` - you should never need to use that inside the `main`
+2. You need to communicate with the external world somehow
+3. You need to change some global state
+
+#### Encoding side-effects into signal transforms or output signals?
+
+In a rule of thumb, you should encode the side-effects into signal transform
+functions if the input signal and the side effect result signal have a 
+**direct causation**, for example `request => response`.
+
+You should encode the side-effects into output signals and interpret them with
+the `executor` when the input there is no input => output causation (only 
+effects), for example `VNode => ()`.
+
+### Why the separation of `main` and interpreters?
+
+You may think that the separation of `main` and interpreters is just waste.
+What benefit you get by doing that? The answer is that separating those 
+significantly improves *testability, extensibility and the separation 
+of concerns* of the application.
+
+Imagine that you need to implement universal server rendering to your 
+application - just change the `DOM` interpreter to server `DOM` interpreter
+that produces HTML strings instead of rendering the virtual dom to the
+actual DOM. How about if you need to test your application? Just replace the
+interpreters with test interpreters so that they produce signals your test 
+case needs and assert the output signals your application produces. How
+about if you need to implement undo/redo? Just change the application state
+interpreter to keep state revisions in memory. How about if you API version
+changes? Just modify you API interpreter to convert the new version data
+to the current one.
+
+
+## From theory to practice 
+
+Now that you're familiar with TSER's core concepts and the application
+structure, let's see how to build TSERS application in practice. This
+section is just a quick introduction. For more detailed tutorial, please
+take a look at the TSERS tutorial in the 
+**[examples repository](https://github.com/tsers-js/examples)**.
+
+### Starting the application
+
+First you need to install `@tsers/core` and some interpreters. We're gonna
+use two basic interpreters: React DOM interpreter for rendering and Model 
+interpreter for our application state managing.
+```bash 
+npm i --save @tsers/core @tsers/react @tsers/model
+```
+
+Now we can create and start our application. `@tsers/core` provides
+a function that takes the `main` and the interpreters that are attached
+to the application. The official interpreter packages provide always
+a factory function that can be used to initialize the actual interpreter.
+```js
 import TSERS from "@tsers/core"
-import makeReactDOM from "@tsers/react"
-import main from "./your-app"
+import ReactDOM from "@tsers/react"
+import Model from "@tsers/model"
 
-const [Transducers, signal$, executor] = TSERS({
-  DOM: makeReactDOM("#app")
-})
-const { run } = Transducers
-
-const dispose = executor(run(signal$, main(Transducers)))
-```
-
-Now you may understand why the signature of `main` is `Transducers => input$ => output$`:
-it allows you to pass down the transducers and use them at the same time without partial
-application or currying. It's all about composition. It's TSERS!
-
-
-## Model-View-Intent
-
-The one major difference between TSERS and Cycle is that TSERS implements the real `MVI`
-whereas Cycle implements `IMV`. In practice this means that in Cycle apps, the border
-of **M**odel and **I**ntent becomes blurry when there is a cross-dependency between
-them. The simplest case is a form validation:
-
-1. In order to send the form to the server, you must have the form values (intent depends on model)
-2. In order to show an AJAX spinner during the validation, the send status must be
-stored to the form (model depends on intent)
-
-Of course that is solvable with `IMV` and there are more or less elegant solutions
-either leaking memory or not. In `MVI` however, there is no exception - you can
-**always** apply `MVI` and loop the model dependencies back to input by using `run`.
-
-```javascript
-const main = T => in$ => {
-  const {DOM, HTTP, decompose, compose} = T
-  const [actions] = decompose(in$, "validate$", "validated$")
-  return intent(view(model(actions)))
-
-  function model({validate$, validated$}) {
-    const form$ = validate$.map(toShowSpinnerMod)
-      .merge(validated$.map(toAddValidationResultsAndRemoveSpinnerMod))
-      .startWith(someInitialValues)
-      .scan(applyMods)
-      .shareReplay(1)
-    return form$
-  }
-
-  function view(form$) {
-    return [form$, buildFormVDOM(form$)]
-  }
-
-  function intent([form$, vdom$]) {
-    const validate$ = DOM.events(vdom$, "button.validate", "click")
-    const validated$ = HTTP.req(form$.sample(validate$).map(toReqObject)).switch()
-    const out$ = compose({DOM: vdom$, value$: form$})
-    const loop$ = compose({validate$, validated$})
-    return [out$, loop$]
-  }
+function main(signals) {
+  // your app logic comes here!
 }
 
-// index.js
-executor(run(signal$, main(Transducers)))
+// start the application with model$ and DOM interpreters
+TSERS(main, {
+  DOM: ReactDOM("#app"),     // render to #app element
+  model$: Model(0)           // create application state model by using initial value: 0
+})
 ```
 
+### Adding some app logic inside the `main` 
 
-## Common Transducer API reference
+Now we can use the signals and transforms provided by those interpreters,
+as well as TSERS's core transform functions (see API reference below).
+Interpreters' signals and transform functions are always accessible by their
+keys. Also `main`'s output signals match those keys:
+```js
+function main(signals) {
+  // All core transforms (like "mux") are also accessible 
+  // via "signals" input parameter
+  const {DOM, model$, mux} = signals
+  const {h} = DOM
 
-TODO: examples
+  // model$ is an instance of @tsers/model - it provides the application
+  // state as an observable, so you can use model$ like any other observable
+  // (map, filter, combineLatest, ...).
 
+  // let's use the model$ observable to get its value and render a virtual-dom
+  // based on the value. DOM.prepare is needed so that we can derive user event
+  // streams from the virtual dom stream
+  const vdom$ = DOM.prepare(model$.map(counter =>
+    h("div", [
+      h("h1", `Counter value is ${counter}`),
+      h("button.inc", "++"),
+      h("button.dec", "--")
+    ])))
+
+  // model$ enables you to change the state by emitting "modify functions"
+  // as out output signals. The modify functions have always signature
+  // (curState => nextState) - they receive the current state of the model
+  // as input and must provide the next state based on the current state
+
+  // Let's make modify functions for the counter: when increment button is
+  // clicked, increment the counter state by +1. When decrement button is clicked,
+  // decrement the state by -1
+  const incMod$ = DOM.events(vdom$, ".inc", "click").map(() => state => state + 1)
+  const decMod$ = DOM.events(vdom$, ".dec", "click").map(() => state => state - 1)
+
+  // And because the mods are just observables, we can merge them
+  const mod$ = O.merge(incMod$, decMod$)
+
+  // Finally we must produce the output signals. Because JavaScript functions
+  // can return only one value (observable), we must multiplex ("mux") DOM
+  // and model$ signals into single observable by using "mux" core transform
+  return mux({
+    DOM: vdom$,
+    model$: model$.mod(mod$)
+  })
+}
+```
+
+Again: more detailed tutorial can be found from the TSERS
+**[examples repository](https://github.com/tsers-js/examples)**.
+
+## What's different compared to Cycle?
+
+If you read through this documentation, you might wonder that TSERS resembles 
+Cycle very much. Technically that's true. Then why not to use Cycle? 
+
+Although the technical implementations of TSERS and Cycle are very similar,
+their ideologies are not. Cycle is strongly driven by the classification of
+**read-effects** and **write-effects** which means that drivers are not 
+"allowed" to provide signal transforms encoding side-effects. Instead,
+all side effects must go to sinks and their results must be read from the
+sources, regardless of the causation of the side-effect and it's input.
+
+Cycle's drivers are also meant for external world communications
+**only**, hence e.g. maintaining the global application state with 
+drivers is not "allowed" in Cycle (although maintaining it with e.g. Relay 
+driver is!!).
+
+In practice, those features in Cycle result in some unnecessary symptoms like
+the existence of [isolation](https://github.com/cyclejs/isolate), usage of `IMV` 
+instead of `MVI` (which works pretty well btw, until your intents start to depend
+on the model), [proxy subjects](https://github.com/cyclejs/examples/blob/master/advanced-list/src/app.js#L65)
+usage, [performance issues](https://github.com/cyclejs/todomvc-cycle/issues/22)
+and [unnecessary complexity](https://gist.github.com/milankinen/cb0e898ae52c61e8d5da)
+whe sharing the state between parent and child components.
+
+And those are the reasons for the existence of TSERS.
+
+
+## Core transforms API Reference
+
+### `mux` 
+
+JavaScript allows function to return only one value. That means that `main` can
+return only one observable of signals. However, applications usually produce 
+multiple types of signals (DOM, WebSocket messages, model state changes...).
+
+That's why TSERS uses [multiplexing](https://en.wikipedia.org/wiki/Multiplexing) to
+"combine" multiple types of signals into single observable. Multiplexing is way of combining 
+multiple signal streams into one stream of signals so that different type of 
+signals are identifiable from other signals. 
+
+The signature of `mux` is:
+```
+mux :: ({signalKey: signal$}, otherMuxed$ = Observable.empty()) => muxedSignal$
+```
+
+`mux` takes the multiplexed streams as an object so that object's keys represent the 
+type of the multiplexed signals. `mux` takes also second (optional) parameter, that
+is a stream of already muxed other signals (coming usually from the child components)
+and merges it to output.
+
+Usually you want to use `mux` in the end of `main` to combine all application
+signals into single observable of signals:
+```js
+function main({DOM, model$}) {
+  // ....
+  return mux({
+    DOM: vdom$,
+    model$: mod$
+  })
+}
+```
+
+### `demux` 
+
+De-muxing (or de-multiplexing) is the reverse operation for muxing: it takes
+an observable of the muxed signals, extracts the given signal types by their keys and
+returns also the rest of the signals that were not multiplexed
+```
+demux :: (muxedSignal$, ...keys) => [{signalKey: signal$}, otherMuxed$]
+```
+
+Usually you want to use this when you call child component from the parent
+component and want to post-process child's specific output signals (e.g. DOM)
+in the parent component:
+```js
+const childOut$ = Counter({...signals, model$: childModel$})
+const [{DOM: childDOM$}, rest$] = demux(childOut$, "DOM")
+``` 
+
+### `loop` 
+
+`loop` is a transform that allows "looping" signals from downstream back to upstream. 
+It takes input signals and a transform function producing `output$` and `loop$` signals
+array - `output$` signals are passed through as they are, but `loop$` signals
+are merged back to the transform function as input signals.
+
+```js
+const initialText$ = O.just("Tsers").shareReplay(1)
+const vdom$ = loop(initialText$, text$ => {
+  const vdom$ = DOM.prepare(text$.map(...))
+  const click$ = DOM.events(vdom$, "button", "click")
+  const updatedText$ = click$.withLatestFrom(text$, (_, text) => text + "!")
+  // vdom$ signals are passed out, updatedText$ signals are looped back to text$ signals
+  return [vdom$, updatedText$]
+})
+```
+
+### `mapListById` 
+
+Takes a list observable (whose items have `id` property) and iterator function, applies 
+the iterator function to each list item and returns a list observable by using the return 
+values from the iterator function (conceptually same as `list$.map(items => items.map(...))`).
+
+* Item ids **must be unique within the list**.
+* Iterator function receives two arguments: iterated item id and 
+an observable containing the item and it's state changes
+
+**ATTENTION:** iterator function is applied only **once** per item (by `id`), although the
+list observable emits multiple values. This enables some heavy performance optimizations
+to the list processing like duplicate detection, cold->hot observable conversion and
+caching.
+
+`TODO: example...`
+
+### `mapListBy`
+
+Same as `mapListById` but allows user to define custom identity function instead of
+using `id` property. Actually the `mapListById` is just a shorthand for this transform:
 ```javascript
-// compose :: ({[key]: [signals-of-key]}, rest$ = O.never()) => output$
-
-
-// decompose :: (in$, ...keys) => [{[key]: [signals-of-key]}, rest$]
-
-
-// extract :: (in$, key) => signals-of-key$
-// == decompose(in$, key)[0][key]
-
-// run :: (in$, (in$ => [out$, loop$])) => out$
-
-
-// decomposeLatest :: (out$$, ...keys) => [{[key]: [signals-of-key]}, rest$]
-const out$$ = form$.map(f => run(in$, Child(Transducers, f.childValue)))
-const [{DOM, value$}, rest$] = decomposeLatest(out$$, "DOM", "value$")
-
-// listDecomposeLatest :: (outArr$, (val => out$), ...keys) => [{[key]: [signals-of-key]}, rest$]
-const persons$ = form$.map(f => f.persons)
-const [{DOM, value$}, rest$] = listDecomposeLatest(persons$, person => run(in$, Person(Transducers, person)),
-  "DOM", "value$")
-// DOM is now an array of latest DOM values of Person components
-// value$ is now an array of latest values of Persons
+const mapListById = mapListById(item => item.id)
 ```
+
+### `demuxCombined`
+
+`demuxCombined` has the same API contract as `demux` but instead of bare output
+signals, `demuxCombined` handles a *list of output signals*. The name already
+implies the extraction strategy: after the output signals are extracted by using
+the given keys, their latest values are combined by using `Observable.combineLatest`,
+thus resulting an observable that produces a list of latest values from the
+extracted output signals. Rest of the signals are flattened and merged by using
+`Observable.merge` so the return value of `demuxCombined` is identical with 
+`demux` (hence can be used in the same way when muxing child signals to parent's
+output signals).
+
+`TODO: example...`
+
+
+## Interpreter API reference
+
+`TODO: ...`
 
 
 ## License
