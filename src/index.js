@@ -92,21 +92,28 @@ export function loop(input$, main) {
 
 export function mapListBy(identity, list$, it) {
   return O.using(() => new Cache(), cache => {
-    return list$
-      .distinctUntilChanged(items => items.map(item => identity(item)), (a, b) => {
+    const indexed$ = list$
+      .map(items => ({
+        list: items,
+        byKey: items.reduce((o, item, idx) => (o[identity(item)] = {item, idx}) && o, {})
+      }))
+      .shareReplay(1)
+
+    return indexed$
+      .distinctUntilChanged(x => x.list.map(item => identity(item)), (a, b) => {
         if (a.length !== b.length) return false
         for (var i = 0; i < a.length; i++) {
           if (a[i] !== b[i]) return false
         }
         return true
       })
-      .map(items => {
-        const itemByKey = {}
-        items.forEach((item, idx) => itemByKey[identity(item)] = {item, idx})
+      .map(x => {
+        const items = x.list
+        const itemByKey = x.byKey
         items.forEach((item, idx) => {
           const key = identity(item)
           if (!cache.contains(key)) {
-            const item$ = list$.map(findByIdentityEq(identity, key)).share()
+            const item$ = indexed$.map(x => x.byKey[key]).share()
             cache.put(key, it(key, item$), idx)
           } else {
             cache.update(key, idx, item)
@@ -120,14 +127,6 @@ export function mapListBy(identity, list$, it) {
         return cache.list()
       })
   }).shareReplay(1)
-
-  function findByIdentityEq(identity, key) {
-    return items => {
-      for (var i = 0; i < items.length; i++) {
-        if (identity(items[i]) === key) return items[i]
-      }
-    }
-  }
 }
 
 
