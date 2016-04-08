@@ -1,6 +1,6 @@
 import should from "should"
 import Rx, {Observable as O} from "rx"
-import TSERS, {mux} from "../src/index"
+import TSERS, {mux} from "./index"
 
 
 const noop = () => undefined
@@ -59,7 +59,7 @@ describe("TSERS(main, interpreters)", () => {
     })
 
     function main() {
-      return mux({A: O.just("a"), B: O.just("b"), D: O.just("d")})
+      return mux({A: O.just("a"), B: O.just("b"), D: O.just("d")}).delay(1)
     }
 
     s.bufferWithCount(2).subscribe(() => done())
@@ -71,7 +71,7 @@ describe("TSERS(main, interpreters)", () => {
   })
 
   it("returns a dispose function that allows stopping the main running", done => {
-    let d, s = new Rx.Subject()
+    let dispose, s = new Rx.Subject()
 
     function main() {
       return mux({
@@ -81,8 +81,8 @@ describe("TSERS(main, interpreters)", () => {
     }
 
     s.bufferWithTime(200).first().subscribe(() => done())
-    d = TSERS(main, {
-      A: interpreter(out$ => out$.subscribe(() => d && d.dispose())),
+    dispose = TSERS(main, {
+      A: interpreter(out$ => out$.subscribe(() => dispose && dispose())),
       B: interpreter(out$ => out$.subscribe(done.fail, done.fail, done.fail))
     })
   })

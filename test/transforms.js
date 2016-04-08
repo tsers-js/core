@@ -1,6 +1,6 @@
 import "should"
 import Rx, {Observable as O} from "rx"
-import {mux, demux, loop, mapListBy, demuxCombined} from "../src/index"
+import {mux, demux, loop, mapListBy, demuxCombined} from "./index"
 
 const noop = () => undefined
 
