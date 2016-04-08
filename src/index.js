@@ -58,22 +58,22 @@ export default function TSERS(ObservableImpl, main, interpreters) {
 export const mux = O => (input, rest$) => {
   rest$ = rest$ && new O(rest$)
   const muxed$ = O.merge(objKeys(input).map(k => to(new O(input[k]), k)))
-  return (rest$ ? O.merge([muxed$, rest$]) : muxed$).return()
+  return (rest$ ? O.merge([muxed$, rest$]) : muxed$).get()
 }
 
 export const demux = O => (out$, ...keys) => {
   out$ = (new O(out$)).multicast()
-  const demuxed = keys.reduce((o, k) => (o[k] = from(out$, k).return()) && o, {})
+  const demuxed = keys.reduce((o, k) => (o[k] = from(out$, k).get()) && o, {})
   const rest$ = out$.filter(keyNotIn(keys))
-  return [demuxed, rest$.return()]
+  return [demuxed, rest$.get()]
 }
 
 export const demuxCombined = O => (list$$, ...keys) => {
   list$$ = new O(list$$)
   const combine = k => list => O.combine(list.map(out$ => from(new O(out$), k)))
-  const demuxed = keys.reduce((o, k) => (o[k] = list$$.flatMapLatest(combine(k)).toProperty().return()) && o, {})
+  const demuxed = keys.reduce((o, k) => (o[k] = list$$.flatMapLatest(combine(k)).toProperty().get()) && o, {})
   const rest$ = list$$.flatMapLatest(list => O.merge(list.map(out$ => new O(out$).filter(keyNotIn(keys)))))
-  return [demuxed, rest$.return()]
+  return [demuxed, rest$.get()]
 }
 
 export const loop = O => (input$, main) => {
@@ -83,11 +83,11 @@ export const loop = O => (input$, main) => {
     input$,
     O.create(o => (lo = o) && (() => lo = null))
   ])
-  const [out$, loop$] = main(in$.return()).map(o => new O(o))
+  const [out$, loop$] = main(in$.get()).map(o => new O(o))
   const lo$ = loop$
     .doOnCompleted(() => lo && lo.completed())
     .filter(val => lo && lo.next(val) && false)
-  return O.merge([out$, lo$]).return()
+  return O.merge([out$, lo$]).get()
 }
 
 export const mapListBy = O => (identity, list$, it) => {
@@ -114,7 +114,7 @@ export const mapListBy = O => (identity, list$, it) => {
         items.forEach((item, idx) => {
           const key = identity(item)
           if (!cache.contains(key)) {
-            const item$ = indexed$.map(x => x.byKey[key]).return()
+            const item$ = indexed$.map(x => x.byKey[key]).get()
             cache.put(key, new O(it(key, item$)), idx)
           } else {
             cache.update(key, idx, item)
@@ -134,7 +134,7 @@ export const mapListBy = O => (identity, list$, it) => {
   return res$
     .flatMapLatest(x => x)
     .toProperty()
-    .return()
+    .get()
 }
 
 
@@ -150,7 +150,7 @@ extend(Cache.prototype, {
     const [out$, dispose] = output$.hot(true)
     this.cache[key] = {
       key,
-      out$: out$.return(),
+      out$: out$.get(),
       dispose,
       idx
     }
