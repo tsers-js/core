@@ -25,9 +25,6 @@
     "build": "mkdir -p dist && rm -f dist/* && babel src/index.js > dist/tsers.core.js",
     "minify": "uglifyjs -c -m -- dist/tsers.core.js > dist/tsers.core.min.js"
   },
-  "peerDependencies": {
-    "rx": "4.x"
-  },
   "devDependencies": {
     "@tsers/rx": "latest",
     "babel-cli": "^6.6.5",
