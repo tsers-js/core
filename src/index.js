@@ -51,8 +51,8 @@ export default function TSERS(ObservableImpl, main, interpreters) {
   if (!O.is(out$))
     throw new Error("Main must return an Observable")
   const [out] = demux(O)(out$, ...objKeys(interpreters))
-  const disposes = objKeys(out).map(key => executors[key] && executors[key](out[key]))
-  return O.disposeMany(disposes.filter(d => d))
+  const subscriptions = objKeys(out).map(key => executors[key] && executors[key](out[key]))
+  return O.disposeMany(subscriptions.filter(s => s).map(O.subscriptionToDispose))
 }
 
 export const mux = O => (input, rest$) => {
