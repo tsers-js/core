@@ -1,7 +1,3 @@
-import Rx, {Observable as O} from "rx"
-
-const noop = () => undefined
-
 const objKeys = x =>
   x ? Object.keys(x) : []
 
@@ -27,14 +23,18 @@ const mapValuesWhen = (obj, fn) =>
     return a ? ((o[k] = a) && o) : o
   }, {})
 
-
-export default function TSERS(main, interpreters) {
+export default function TSERS(ObservableImpl, main, interpreters) {
+  const O = ObservableImpl && ObservableImpl.TSERS
+  if (!O)
+    throw new Error("The given Observable bindings are not TSERS compatible")
   if (!isObj(interpreters) || objKeys(interpreters).length === 0)
     throw new Error("Interpreters must be an object of initializer functions (at least one interpreter required)")
 
-  const mapListById = mapListBy.bind(null, x => x.id)
-  const CommonTransformers = {mux, demux, loop, mapListById, mapListBy, demuxCombined}
-  const InterpreterImports = CommonTransformers
+  const CommonTransformers = {
+    ...mapValuesWhen({mux, demux, demuxCombined, loop, mapListBy}, t => t(O)),
+    mapListById: mapListBy(O).bind(null, x => x.id)
+  }
+  const InterpreterImports = {...CommonTransformers, O}
   const signalsAndExecutors = mapValuesWhen(interpreters, d => d(InterpreterImports))
 
   const input = {
@@ -47,63 +47,64 @@ export default function TSERS(main, interpreters) {
   if (objKeys(executors).length === 0)
     throw new Error("At least one executor is required")
 
-  const noopd = {dispose: noop}
   const out$ = main(input)
-  if (!O.isObservable(out$))
+  if (!O.is(out$))
     throw new Error("Main must return an Observable")
-  const [out] = demux(out$, ...objKeys(interpreters))
-
-  return new Rx.CompositeDisposable(objKeys(out).map(key =>
-    executors[key] ? executors[key](out[key]) || noopd : noopd
-  ))
+  const [out] = demux(O)(out$, ...objKeys(interpreters))
+  const disposes = objKeys(out).map(key => executors[key] && executors[key](out[key]))
+  return O.disposeMany(disposes.filter(d => d))
 }
 
-export function mux(input, rest$) {
-  const muxed$ = O.merge(...objKeys(input).map(k => to(input[k], k)))
-  return rest$ ? muxed$.merge(rest$) : muxed$
+export const mux = O => (input, rest$) => {
+  rest$ = rest$ && new O(rest$)
+  const muxed$ = O.merge(objKeys(input).map(k => to(new O(input[k]), k)))
+  return (rest$ ? O.merge([muxed$, rest$]) : muxed$).return()
 }
 
-export function demux(out$, ...keys) {
-  const demuxed = keys.reduce((o, k) => (o[k] = from(out$, k)) && o, {})
+export const demux = O => (out$, ...keys) => {
+  out$ = (new O(out$)).multicast()
+  const demuxed = keys.reduce((o, k) => (o[k] = from(out$, k).return()) && o, {})
   const rest$ = out$.filter(keyNotIn(keys))
-  return [demuxed, rest$]
+  return [demuxed, rest$.return()]
 }
 
-export function demuxCombined(list$$, ...keys) {
-  const combine = k => list => list.length === 0 ? O.just([])
-    : O.combineLatest(...list.map(out$ => from(out$, k)))
-  const demuxed = keys.reduce((o, k) => (o[k] = list$$.flatMapLatest(combine(k)).shareReplay(1)) && o, {})
-  const rest$ = list$$.flatMapLatest(list => O.merge(list.map(out$ => out$.filter(keyNotIn(keys))))).share()
-  return [demuxed, rest$]
+export const demuxCombined = O => (list$$, ...keys) => {
+  list$$ = new O(list$$)
+  const combine = k => list => O.combine(list.map(out$ => from(new O(out$), k)))
+  const demuxed = keys.reduce((o, k) => (o[k] = list$$.flatMapLatest(combine(k)).toProperty().return()) && o, {})
+  const rest$ = list$$.flatMapLatest(list => O.merge(list.map(out$ => new O(out$).filter(keyNotIn(keys)))))
+  return [demuxed, rest$.return()]
 }
 
-export function loop(input$, main) {
+export const loop = O => (input$, main) => {
+  input$ = new O(input$)
   let lo = null
-  const in$ = input$
-    .merge(O.create(o => (lo = o) && (() => lo = null)))
-    .doOnCompleted(() => lo && lo.onCompleted() && (lo = null))
-    .share()
-  const [out$, loop$] = main(in$)
+  const in$ = O.merge([
+    input$,
+    O.create(o => (lo = o) && (() => lo = null))
+  ])
+  const [out$, loop$] = main(in$.return()).map(o => new O(o))
   const lo$ = loop$
-    .doOnCompleted(() => lo && lo.onCompleted())
-    .filter(val => lo && lo.onNext(val) && false)
-  return out$.merge(lo$).share()
+    .doOnCompleted(() => lo && lo.completed())
+    .filter(val => lo && lo.next(val) && false)
+  return O.merge([out$, lo$]).return()
 }
 
-export function mapListBy(identity, list$, it) {
-  return O.using(() => new Cache(), cache => {
-    const indexed$ = list$
+export const mapListBy = O => (identity, list$, it) => {
+  const res$ = O.create(o => {
+    const cache = new Cache()
+    const indexed$ = new O(list$)
       .map(items => ({
         list: items,
         byKey: items.reduce((o, item, idx) => (o[identity(item)] = {item, idx}) && o, {})
       }))
-      .shareReplay(1)
+      .toProperty()
 
-    return indexed$
-      .distinctUntilChanged(x => x.list.map(item => identity(item)), (a, b) => {
+    const cached$ = indexed$
+      .skipDuplicates(({list: a}, {list: b}) => {
         if (a.length !== b.length) return false
         for (var i = 0; i < a.length; i++) {
-          if (a[i] !== b[i]) return false
+          if (identity(a[i]) !== identity(b[i])) return false
         }
         return true
       })
@@ -113,8 +114,8 @@ export function mapListBy(identity, list$, it) {
         items.forEach((item, idx) => {
           const key = identity(item)
           if (!cache.contains(key)) {
-            const item$ = indexed$.map(x => x.byKey[key]).share()
-            cache.put(key, it(key, item$), idx)
+            const item$ = indexed$.map(x => x.byKey[key]).return()
+            cache.put(key, new O(it(key, item$)), idx)
           } else {
             cache.update(key, idx, item)
           }
@@ -126,7 +127,14 @@ export function mapListBy(identity, list$, it) {
         })
         return cache.list()
       })
-  }).shareReplay(1)
+    o.next(cached$)
+    return () => cache.dispose()
+  })
+
+  return res$
+    .flatMapLatest(x => x)
+    .toProperty()
+    .return()
 }
 
 
@@ -139,12 +147,11 @@ extend(Cache.prototype, {
     return key in this.cache
   },
   put(key, output$, idx) {
-    const out$ = output$.replay(null, 1)
-    const disposable = out$.connect()
+    const [out$, dispose] = output$.hot(true)
     this.cache[key] = {
       key,
-      out$,
-      disposable,
+      out$: out$.return(),
+      dispose,
       idx
     }
   },
@@ -155,7 +162,7 @@ extend(Cache.prototype, {
     const cached = this.cache[key]
     if (cached) {
       delete this.cache[key]
-      cached.disposable.dispose()
+      cached.dispose()
     }
   },
   keys() {
