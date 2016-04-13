@@ -71,7 +71,7 @@ export const demux = O => (out$, ...keys) => {
 export const demuxCombined = O => (list$$, ...keys) => {
   list$$ = new O(list$$)
   const combine = k => list => O.combine(list.map(out$ => from(new O(out$), k)))
-  const demuxed = keys.reduce((o, k) => (o[k] = list$$.flatMapLatest(combine(k)).toProperty().get()) && o, {})
+  const demuxed = keys.reduce((o, k) => (o[k] = list$$.flatMapLatest(combine(k)).getp()) && o, {})
   const rest$ = list$$.flatMapLatest(list => O.merge(list.map(out$ => new O(out$).filter(keyNotIn(keys)))))
   return [demuxed, rest$.get()]
 }
@@ -93,12 +93,11 @@ export const loop = O => (input$, main) => {
 export const mapListBy = O => (identity, list$, it) => {
   const res$ = O.create(o => {
     const cache = new Cache()
-    const indexed$ = new O(list$)
-      .map(items => ({
+    const byKey$ = new O(list$).map(items => ({
         list: items,
         byKey: items.reduce((o, item, idx) => (o[identity(item)] = {item, idx}) && o, {})
       }))
-      .toProperty()
+    const indexed$ = new O(byKey$.getp())
 
     const cached$ = indexed$
       .skipDuplicates(({list: a}, {list: b}) => {
@@ -114,7 +113,7 @@ export const mapListBy = O => (identity, list$, it) => {
         items.forEach((item, idx) => {
           const key = identity(item)
           if (!cache.contains(key)) {
-            const item$ = indexed$.map(x => x.byKey[key]).get()
+            const item$ = indexed$.map(x => x.byKey[key].item).skipDuplicates().getp()
             cache.put(key, new O(it(key, item$)), idx)
           } else {
             cache.update(key, idx, item)
@@ -131,10 +130,7 @@ export const mapListBy = O => (identity, list$, it) => {
     return () => cache.dispose()
   })
 
-  return res$
-    .flatMapLatest(x => x)
-    .toProperty()
-    .get()
+  return res$.flatMapLatest(x => x).getp()
 }
 
 
@@ -150,7 +146,7 @@ extend(Cache.prototype, {
     const [out$, dispose] = output$.hot(true)
     this.cache[key] = {
       key,
-      out$: out$.get(),
+      out$: out$.get(false),
       dispose,
       idx
     }
