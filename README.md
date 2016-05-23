@@ -490,7 +490,7 @@ caching.
 Same as `mapListById` but allows user to define custom identity function instead of
 using `id` property. Actually the `mapListById` is just a shorthand for this transform:
 ```javascript
-const mapListById = mapListById(item => item.id)
+const mapListById = mapListBy(item => item.id)
 ```
 
 ### `demuxCombined`
