@@ -11,6 +11,10 @@
 
 > "tsers!"
 
+Pronunciation: **[tsers]** (Also note that the /r/ is an alveolar trill, or
+"rolled r", not the postalveolar approximant ɹ̠ that is used in English and
+sometimes written similarly for convenience.)
+
 ## Motivation
 
 In the era of the JavaScript fatigue, new JS frameworks pop up like mushrooms
