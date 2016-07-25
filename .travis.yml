@@ -5,4 +5,7 @@ node_js:
 script:
   - npm run test:ci
 after_success:
-  - npm run report
+  # make reports and combine them
+  - npm run report:ci
+  # send reports to codecov
+  - ./node_modules/.bin/codecov

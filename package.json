@@ -21,11 +21,13 @@
     "create:package": "lehm create package",
     "test": "lerna run test",
     "test:ci": "lerna run test:ci",
-    "report:ci": "lerna run report:ci"
+    "report:ci": "lerna run report:ci",
+    "postreport:ci": "rimraf coverage && mkdir -p coverage && lcov-result-merger 'packages/*/coverage/lcov.info' coverage/lcov.info"
   },
   "dependencies": {
     "codecov": "^1.0.1",
     "espower-typescript": "^5.0.1",
+    "lcov-result-merger": "^1.2.0",
     "lehm": "^0.1.0",
     "lerna": "^2.0.0-beta.24",
     "mocha": "^2.5.3",
