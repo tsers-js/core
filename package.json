@@ -1,6 +1,6 @@
 {
-  "name": "@tsers/core",
-  "version": "1.0.0",
+  "name": "tsers",
+  "version": "2.0.0-rc0",
   "private": false,
   "description": "Transducer-Signal-Executor framework for Reactive Streams",
   "main": "dist/tsers.core.js",
@@ -16,29 +16,28 @@
     "TSERS"
   ],
   "scripts": {
-    "prepublish": "npm test && npm run dist",
-    "test": "npm run lint && npm run mocha:all",
-    "lint": "eslint src test",
-    "mocha:all": "npm run mocha -- --recursive test",
-    "mocha": "mocha --compilers js:babel-register -s 500",
-    "dist": "npm run build && npm run minify",
-    "build": "mkdir -p dist && rm -f dist/* && babel src/index.js > dist/tsers.core.js",
-    "minify": "uglifyjs -c -m -- dist/tsers.core.js > dist/tsers.core.min.js"
+    "postinstall": "npm run init",
+    "init": "lerna bootstrap",
+    "generate": "lehm create package",
+    "test": "lerna run test",
+    "test:ci": "lerna run test:ci",
+    "report:ci": "lerna run report:ci"
   },
-  "peerDependencies": {
-    "rx": "4.x"
-  },
-  "devDependencies": {
-    "babel-cli": "^6.6.5",
-    "babel-eslint": "^6.0.0",
-    "babel-plugin-transform-es2015-modules-umd": "^6.6.5",
-    "babel-preset-es2015": "^6.6.0",
-    "babel-preset-stage-2": "^6.5.0",
-    "babel-register": "^6.7.2",
-    "eslint": "2.5.3",
-    "mocha": "^2.4.5",
-    "rx": "^4.1.0",
-    "should": "^8.3.0",
-    "uglify-js": "^2.6.2"
+  "dependencies": {
+    "codecov": "^1.0.1",
+    "espower-typescript": "^5.0.1",
+    "lehm": "^0.1.0",
+    "lerna": "^2.0.0-beta.24",
+    "mocha": "^2.5.3",
+    "npm-check-updates": "^2.7.2",
+    "nyc": "^7.1.0",
+    "rimraf": "^2.5.3",
+    "rollup": "^0.34.1",
+    "rollup-plugin-buble": "^0.12.1",
+    "rollup-plugin-node-resolve": "^1.7.1",
+    "ts-node": "^0.9.3",
+    "tslint": "^3.13.0",
+    "typings": "^1.3.1",
+    "uglify-js": "^2.7.0"
   }
 }

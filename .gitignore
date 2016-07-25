@@ -6,9 +6,11 @@
 node_modules
 
 *.log
-npm-debug.log*
 
+.bin
+lib
 dist
+typings
 
 coverage
 .nyc_output
