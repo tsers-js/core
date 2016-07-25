@@ -16,8 +16,9 @@
     "cycle.js"
   ],
   "scripts": {
-    "update": "../../node_modules/.bin/ncu -e 2 -u -a --packageFile ./package.json",
-    "preinstall": "rm -f .bin && ln -s ../../node_modules/.bin .bin",
+    "update": "npm run update:binaries && npm run update:modules",
+    "update:modules": "../../node_modules/.bin/ncu -e 2 -u -a --packageFile ./package.json",
+    "update:binaries": "rm -f .bin && ln -s ../../node_modules/.bin .bin",
     "pretest": "npm run typings",
     "test": "npm run lint && npm run mocha:all",
     "lint": ".bin/tslint -c ../../tslint.json src/*.ts src/**/*.ts",
