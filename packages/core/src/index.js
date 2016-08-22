@@ -1,3 +1,2 @@
-export default function index() {
-  return "core"
-}
+
+export {default as curry} from "./curry"
