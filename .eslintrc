@@ -2,7 +2,8 @@
   "extends": "eslint:recommended",
   "rules": {
     "semi": [2, "never"],
-    "quotes": [2, "double"]
+    "quotes": [2, "double"],
+    "no-console": 1
   },
   "env": {
     "node": true,
