@@ -18,3 +18,5 @@ export const doPipe = (x, ...fns) =>
 
 export const comp = (fn, ...fns) =>
   fns.length ? fns.reduce((g, f) => x => g(f(x)), fn) : fn
+
+export const keys = Object.keys
