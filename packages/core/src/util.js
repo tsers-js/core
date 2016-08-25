@@ -20,3 +20,15 @@ export const comp = (fn, ...fns) =>
   fns.length ? fns.reduce((g, f) => x => g(f(x)), fn) : fn
 
 export const keys = Object.keys
+
+export const extend = (a, b) => {
+  keys(b).forEach(key => {
+    if (b.hasOwnProperty(key)) {
+      a[key] = b[key]
+    }
+  })
+}
+
+export const identity = x => x
+
+export const always = x => () => x

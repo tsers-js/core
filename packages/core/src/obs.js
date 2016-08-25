@@ -52,12 +52,14 @@ export const subscribe = curry((obs, s) => {
 export const is = s =>
   (s && isFun(s.drain) && isFun(s.subscribe) && isFun(s.observe))
 
-export const adapt = (stream, subscribe) =>
-  is(stream) ? stream : create(obs => subscribe(stream, obs))
+export const adaptIn = curry((originStreamSubscribe, stream) =>
+  is(stream) ? stream : create(obs => originStreamSubscribe(stream, obs)))
 
+export const adaptOut = curry((SA, stream) =>
+  SA.adapt(stream, Adapter.streamSubscribe))
 
 export const Adapter = {
-  adapt,
+  adapt: (stream, subs) => adaptIn(subs, stream),
   isValidStream: is,
   remember: hold,
   makeSubject() {
@@ -74,6 +76,8 @@ export const Adapter = {
   }
 }
 
+
+///
 
 function TapOnDispose(fn, source) {
   this.fn = fn

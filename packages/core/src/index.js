@@ -13,6 +13,10 @@ export {
   isArray,
   pipe,
   comp,
+  keys,
+  extend,
+  identity,
+  always,
   doPipe as __
 } from "./util"
 
