@@ -1,6 +1,6 @@
 {
   "name": "@tsers/model",
-  "version": "0.0.0",
+  "version": "3.0.0",
   "description": "TSERSful state and data-model management",
   "author": "Matti Lankinen <m.lankinen@iki.fi> (https://github.com/milankinen)",
   "license": "MIT",
@@ -30,11 +30,19 @@
     "test:ci": ".bin/nyc npm t",
     "report:ci": ".bin/nyc report --reporter=lcov"
   },
+  "dependencies": {
+    "@tsers/core": "^3.0.0",
+    "partial.lenses": "^3.8.0"
+  },
   "devDependencies": {
     "should": "^11.1.0"
   },
   "nyc": {
-    "extension": [ ".js" ],
-    "include": [ "src/*.js" ]
+    "extension": [
+      ".js"
+    ],
+    "include": [
+      "src/*.js"
+    ]
   }
 }

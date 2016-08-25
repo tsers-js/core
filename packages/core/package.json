@@ -1,6 +1,6 @@
 {
   "name": "@tsers/core",
-  "version": "0.0.0",
+  "version": "3.0.0",
   "description": "TSERSful core utils",
   "author": "Matti Lankinen <m.lankinen@iki.fi> (https://github.com/milankinen)",
   "license": "MIT",

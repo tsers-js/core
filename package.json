@@ -24,7 +24,7 @@
     "report:ci": "lerna run report:ci",
     "postreport:ci": "rimraf coverage && mkdir -p coverage && lcov-result-merger 'packages/*/coverage/lcov.info' coverage/lcov.info"
   },
-  "dependencies": {
+  "devDependencies": {
     "babel-preset-es2015": "^6.13.2",
     "babel-register": "^6.11.6",
     "codecov": "^1.0.1",
