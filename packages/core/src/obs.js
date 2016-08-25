@@ -5,8 +5,12 @@ import {subject} from "most-subject"
 import curry from "./curry"
 import {isFun} from "./util"
 
+const {Stream} = most
+
 
 export const of = most.of
+
+export const from = most.from
 
 export const empty = most.empty
 
@@ -29,6 +33,12 @@ export const switchLatest = curry(most.switch)
 export const multicast = curry(most.multicast)
 
 export const hold = curry(mhold)
+
+export const skipRepeats = curry(most.skipRepeatsWith)
+
+export const tapOnDispose = curry(function tapOnDispose(fn, stream) {
+  return new Stream(new TapOnDispose(fn, stream.source))
+})
 
 export const create = curry(f => mcreate((next, complete, error) => {
   return f({next, complete, error})
@@ -61,5 +71,32 @@ export const Adapter = {
   },
   streamSubscribe(s, o) {
     return subscribe(s, o)
+  }
+}
+
+
+function TapOnDispose(fn, source) {
+  this.fn = fn
+  this.source = source
+}
+
+TapOnDispose.prototype.run = function (sink, scheduler) {
+  const fn = this.fn
+  const disposable = this.source.run(sink, scheduler)
+  return new CallbackDisposable(() => {
+    fn()
+    disposable.dispose()
+  })
+}
+
+function CallbackDisposable(cb) {
+  this.cb = cb
+}
+
+CallbackDisposable.prototype.dispose = function () {
+  const cb = this.cb
+  if (cb) {
+    this.cb = void 0
+    cb()
   }
 }
