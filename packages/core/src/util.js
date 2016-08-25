@@ -27,6 +27,7 @@ export const extend = (a, b) => {
       a[key] = b[key]
     }
   })
+  return a
 }
 
 export const identity = x => x

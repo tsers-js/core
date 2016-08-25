@@ -7,6 +7,10 @@ import {isFun} from "./util"
 
 const {Stream} = most
 
+// This module contains only the minimal set of curried observable
+// combinators and creators that are needed for TSERSful module
+// development. Add new operators here if the upcoming modules
+// require some combinator that does not exist here yet.
 
 export const of = most.of
 

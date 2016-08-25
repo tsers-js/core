@@ -38,7 +38,7 @@ export default curry(function mapIds(f, streamOfIds) {
       const res = Array(n)
       keys(index).forEach(id => {
         const entry = index[id]
-        res[entry.idx] = entry.obs
+        res[entry.idx] = entry.val
       })
       return res
     })
