@@ -11,7 +11,7 @@ function isDef(s) { return s !== undefined; }
 var emptyNode = VNode('', {}, [], undefined, undefined);
 
 function sameVnode(vnode1, vnode2) {
-  return vnode1.key === vnode2.key && vnode1.sel === vnode2.sel;
+  return vnode1.key === vnode2.key && vnode1.tag === vnode2.tag;
 }
 
 function createKeyToOldIdx(children, beginIdx, endIdx) {
@@ -58,18 +58,10 @@ function init(modules, api) {
         data = vnode.data;
       }
     }
-    var elm, children = vnode.children, sel = vnode.sel;
-    if (isDef(sel)) {
+    var elm, children = vnode.children, tag = vnode.tag;
+    if (isDef(tag)) {
       // Parse selector
-      var hashIdx = sel.indexOf('#');
-      var dotIdx = sel.indexOf('.', hashIdx);
-      var hash = hashIdx > 0 ? hashIdx : sel.length;
-      var dot = dotIdx > 0 ? dotIdx : sel.length;
-      var tag = hashIdx !== -1 || dotIdx !== -1 ? sel.slice(0, Math.min(hash, dot)) : sel;
-      elm = vnode.elm = isDef(data) && isDef(i = data.ns) ? api.createElementNS(i, tag)
-        : api.createElement(tag);
-      if (hash < dot) elm.id = sel.slice(hash + 1, dot);
-      if (dotIdx > 0) elm.className = sel.slice(dot + 1).replace(/\./g, ' ');
+      elm = vnode.elm = isDef(data) && isDef(i = data.ns) ? api.createElementNS(i, tag) : api.createElement(tag);
       if (is.array(children)) {
         for (i = 0; i < children.length; ++i) {
           api.appendChild(elm, createElm(children[i], insertedVnodeQueue));
@@ -112,7 +104,7 @@ function init(modules, api) {
     for (; startIdx <= endIdx; ++startIdx) {
       var i, listeners, rm, ch = vnodes[startIdx];
       if (isDef(ch)) {
-        if (isDef(ch.sel)) {
+        if (isDef(ch.tag)) {
           invokeDestroyHook(ch);
           listeners = cbs.remove.length + 1;
           rm = createRmCb(ch.elm, listeners);
@@ -228,7 +220,7 @@ function init(modules, api) {
     var insertedVnodeQueue = [];
     for (i = 0; i < cbs.pre.length; ++i) cbs.pre[i]();
 
-    if (isUndef(oldVnode.sel)) {
+    if (isUndef(oldVnode.tag)) {
       oldVnode = emptyNodeAt(oldVnode);
     }
 
