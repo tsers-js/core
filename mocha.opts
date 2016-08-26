@@ -1,0 +1,2 @@
+--compilers js:../../node_modules/babel-register
+-r should
