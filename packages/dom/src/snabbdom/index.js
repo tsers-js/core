@@ -8,7 +8,7 @@ var domApi = require('./htmldomapi');
 function isUndef(s) { return s === undefined; }
 function isDef(s) { return s !== undefined; }
 
-var emptyNode = VNode('', {}, [], undefined, undefined);
+var emptyNode = VNode('', {}, []);
 
 function sameVnode(vnode1, vnode2) {
   return vnode1.key === vnode2.key && vnode1.tag === vnode2.tag;
@@ -183,7 +183,7 @@ function init(modules, api) {
       i(oldVnode, vnode);
     }
     var elm = vnode.elm = oldVnode.elm, oldCh = oldVnode.children, ch = vnode.children;
-    if (oldVnode === vnode) return;
+    if (oldVnode === vnode || vnode.id === oldVnode.id) return;
     if (!sameVnode(oldVnode, vnode)) {
       var parentElm = api.parentNode(oldVnode.elm);
       elm = createElm(vnode, insertedVnodeQueue);
