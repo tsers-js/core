@@ -44,6 +44,10 @@ export const tapOnDispose = curry(function tapOnDispose(fn, stream) {
   return new Stream(new TapOnDispose(fn, stream.source))
 })
 
+export const firstAs = curry(function firstAs(val, stream) {
+  return new Stream(new FirstAs(val, stream.source))
+})
+
 export const create = curry(f => mcreate((next, complete, error) => {
   return f({next, complete, error})
 }))
@@ -82,6 +86,39 @@ export const Adapter = {
 
 
 ///
+
+const Pipe = {
+  event: function event(t, x) {
+    this.sink.event(t, x)
+  },
+  error: function error(t, err) {
+    this.sink.error(t, err)
+  },
+  end: function end(t) {
+    this.sink.end(t)
+  }
+}
+
+function FirstAs(val, source) {
+  this.val = val
+  this.source = source
+}
+
+FirstAs.prototype.run = function (sink, scheduler) {
+  return this.source.run(new FirstAsSink(this.val, sink), scheduler)
+}
+
+function FirstAsSink(sink, val) {
+  this.val = val
+  this.sink = sink
+}
+
+FirstAsSink.prototype.event = function (t) {
+  this.sink.event(t, this.val)
+  this.sink.end(t)
+}
+FirstAsSink.prototype.error = Pipe.error
+FirstAsSink.prototype.end = Pipe.end
 
 function TapOnDispose(fn, source) {
   this.fn = fn

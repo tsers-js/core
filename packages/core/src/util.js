@@ -33,3 +33,17 @@ export const extend = (a, b) => {
 export const identity = x => x
 
 export const always = x => () => x
+
+export const zipObj = pairs => {
+  const o = {}
+  pairs.forEach(([k, v]) => o[k] = v)
+  return o
+}
+
+export const find = (pred, xs) => {
+  if (isArray(xs)) {
+    for (let i = 0, n = xs.length; i < n; i++) {
+      if (pred(xs[i])) return xs[i]
+    }
+  }
+}

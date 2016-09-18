@@ -30,11 +30,20 @@
     "test:ci": ".bin/nyc npm t",
     "report:ci": ".bin/nyc report --reporter=lcov"
   },
+  "dependencies": {
+    "@tsers/core": "^3.0.0",
+    "matches-selector": "^1.0.0",
+    "parse-sel": "^1.0.0"
+  },
   "devDependencies": {
     "should": "^11.1.0"
   },
   "nyc": {
-    "extension": [ ".js" ],
-    "include": [ "src/*.js" ]
+    "extension": [
+      ".js"
+    ],
+    "include": [
+      "src/*.js"
+    ]
   }
 }

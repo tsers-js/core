@@ -17,6 +17,8 @@ export {
   extend,
   identity,
   always,
+  zipObj,
+  find,
   doPipe as __
 } from "./util"
 
