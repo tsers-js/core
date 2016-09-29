@@ -25,8 +25,8 @@ export default function (domRoot) {
       next: vnode => {
         const appRoot = create(vnode)
         appRoot.run(mount => {
-          const {domNode} = mount()
-          domRoot.appendChild(domNode)
+          const {dom: app} = mount()
+          domRoot.appendChild(app)
         })
       }
     }))

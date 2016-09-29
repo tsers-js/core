@@ -68,11 +68,11 @@ export default (SA) => {
     }
 
     if (!isStr(selector)) {
-      throw new Error("Tag selector must be a string")
+      //throw new Error("Tag selector must be a string")
     }
 
     const cm = [], pm = []
-    const {tagName, id, className} = parse(selector)
+    const tagName = selector //{tagName, id, className} = parse(selector)
 
     if (isObs(children)) {
       cm.push(__(convertIn(children), O.map(children => ({ch: children.map(toVNode), idx: -1}))))
