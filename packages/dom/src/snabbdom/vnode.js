@@ -4,6 +4,7 @@ export default function VNode(tag, data, children, text, key, id) {
   return {
     id: id || {},
     tag,
+    data,
     key,
     children,
     text

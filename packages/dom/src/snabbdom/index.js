@@ -1,7 +1,7 @@
 /* eslint semi: 0, quotes: 0 */
 'use strict';
 
-var VNode = require('./vnode');
+var VNode = require('./vnode').default;
 var is = require('./is');
 var domApi = require('./htmldomapi');
 
@@ -38,7 +38,7 @@ function init(modules, api) {
   }
 
   function emptyNodeAt(elm) {
-    return VNode(api.tagName(elm).toLowerCase(), {}, [], undefined, elm);
+    return VNode(api.tagName(elm).toLowerCase(), {}, [], undefined, undefined, elm);
   }
 
   function createRmCb(childElm, listeners) {

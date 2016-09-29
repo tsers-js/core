@@ -21,13 +21,20 @@ export const comp = (fn, ...fns) =>
 
 export const keys = Object.keys
 
-export const extend = (a, b) => {
+
+export const extend = (a, b, c, d) => {
+  b && _extend(a, b)
+  c && _extend(a, c)
+  d && _extend(a, d)
+  return a
+}
+
+const _extend = (a, b) => {
   keys(b).forEach(key => {
     if (b.hasOwnProperty(key)) {
       a[key] = b[key]
     }
   })
-  return a
 }
 
 export const identity = x => x

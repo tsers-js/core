@@ -24,11 +24,15 @@ export const map = curry(most.map)
 
 export const filter = curry(most.filter)
 
+export const take = curry(most.take)
+
 export const scan = curry(most.scan)
 
 export const tap = curry(most.tap)
 
-export const combine = curry(most.combineArray)
+export const combine = curry(function combine(streams) {
+  return most.combineArray((...args) => args, streams)
+})
 
 export const merge = curry(most.mergeArray)
 
@@ -44,8 +48,8 @@ export const tapOnDispose = curry(function tapOnDispose(fn, stream) {
   return new Stream(new TapOnDispose(fn, stream.source))
 })
 
-export const firstAs = curry(function firstAs(val, stream) {
-  return new Stream(new FirstAs(val, stream.source))
+export const mapEnd = curry(function mapEnd(fn, stream) {
+  return new Stream(new MapEnd(fn, stream.source))
 })
 
 export const create = curry(f => mcreate((next, complete, error) => {
@@ -99,26 +103,27 @@ const Pipe = {
   }
 }
 
-function FirstAs(val, source) {
-  this.val = val
+function MapEnd(fn, source) {
+  this.fn = fn
   this.source = source
 }
 
-FirstAs.prototype.run = function (sink, scheduler) {
-  return this.source.run(new FirstAsSink(this.val, sink), scheduler)
+MapEnd.prototype.run = function (sink, scheduler) {
+  return this.source.run(new MapEndSink(this.fn, sink), scheduler)
 }
 
-function FirstAsSink(sink, val) {
-  this.val = val
+function MapEndSink(fn, sink) {
+  this.fn = fn
   this.sink = sink
 }
 
-FirstAsSink.prototype.event = function (t) {
-  this.sink.event(t, this.val)
+MapEndSink.prototype.event = Pipe.event
+MapEndSink.prototype.error = Pipe.error
+MapEndSink.prototype.end = function end(t) {
+  const f = this.fn
+  this.event(t, f())
   this.sink.end(t)
 }
-FirstAsSink.prototype.error = Pipe.error
-FirstAsSink.prototype.end = Pipe.end
 
 function TapOnDispose(fn, source) {
   this.fn = fn
