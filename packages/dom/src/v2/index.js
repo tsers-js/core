@@ -1,6 +1,6 @@
 import {__, O} from "@tsers/core"
 import H from "./h"
-import {create} from "./Node"
+import {create} from "./tree"
 import {isStr} from "./util"
 
 export default function (domRoot) {
@@ -23,11 +23,12 @@ export default function (domRoot) {
     domRoot = isStr(domRoot) ? document.querySelector(domRoot) : domRoot
     __(convertIn(vdom), O.subscribe({
       next: vnode => {
-        const appRoot = create(vnode)
-        appRoot.run(mount => {
-          const {dom: app} = mount()
-          domRoot.appendChild(app)
+        const appRoot = create(vnode, {
+          ready: () => {
+            domRoot.appendChild(appRoot.mount())
+          }
         })
+        appRoot.start()
       }
     }))
 

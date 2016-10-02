@@ -11,6 +11,8 @@ function START_PERF() {
   s = performance.now()
 }
 
+START_PERF()
+
 run(main, {
   DOM: DOM("#app")
 })
@@ -25,7 +27,7 @@ function main({DOM: {h, lift}}) {
   //const vdom = h("div", ["tsers: ", Timer(100)])
   //const vdom = h("div", Inc(100))
   const vdom = h("table", [
-    h("tbody", most.mergeArray([O.of([]).tap(START_PERF), BigList(10000, 1000).delay(1)]).tap(() => console.log("asd")))
+    h("tbody", BigList(10000, 10))
   ])
 
   return {
@@ -33,7 +35,7 @@ function main({DOM: {h, lift}}) {
   }
 
   function Inc(t) {
-    return O.periodic(t, 1)
+    return most.periodic(t, 1)
       .scan((x, y) => x + y, 0)
       .map(n => [
         "INC: ",
@@ -68,7 +70,27 @@ function main({DOM: {h, lift}}) {
         h("td", [])
       ])))
     }
+    l[0] = O.merge([l[0], most.never()])
     return O.combine(l)
+  }
+
+  function BigList2(n, t) {
+    console.log("big")
+    const l = []
+    //l.push(Timer(t).map(x => `timer: ${x}`))
+    for (let i = 0; i < n; i++) {
+      l.push(h("tr", [
+        h("td", `id-${i}`),
+        h("td", [
+          h("a", `row ${i}`)
+        ]),
+        h("td", [
+          h("a", [h("span", [])])
+        ]),
+        h("td", [])
+      ]))
+    }
+    return l
   }
 
   function Timer(t) {
