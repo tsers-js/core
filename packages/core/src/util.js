@@ -21,15 +21,36 @@ export const comp = (fn, ...fns) =>
 
 export const keys = Object.keys
 
-export const extend = (a, b) => {
+
+export const extend = (a, b, c, d) => {
+  b && _extend(a, b)
+  c && _extend(a, c)
+  d && _extend(a, d)
+  return a
+}
+
+const _extend = (a, b) => {
   keys(b).forEach(key => {
     if (b.hasOwnProperty(key)) {
       a[key] = b[key]
     }
   })
-  return a
 }
 
 export const identity = x => x
 
 export const always = x => () => x
+
+export const zipObj = pairs => {
+  const o = {}
+  pairs.forEach(([k, v]) => o[k] = v)
+  return o
+}
+
+export const find = (pred, xs) => {
+  if (isArray(xs)) {
+    for (let i = 0, n = xs.length; i < n; i++) {
+      if (pred(xs[i])) return xs[i]
+    }
+  }
+}
