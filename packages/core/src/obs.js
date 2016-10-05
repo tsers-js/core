@@ -28,7 +28,9 @@ export const scan = curry(most.scan)
 
 export const tap = curry(most.tap)
 
-export const combine = curry(most.combineArray)
+export const combine = curry(function combine(streams) {
+  return most.combineArray((...args) => args, streams)
+})
 
 export const merge = curry(most.mergeArray)
 
