@@ -27,7 +27,7 @@ export function patchProps(oldProps, newProps, domNode) {
   i = oldKeys.length
   while (i--) {
     key = oldKeys[i]
-    if (!(key in newKeys)) {
+    if (!(key in newProps)) {
       patchProp(key, oldProps[key], undefined, domNode)
     }
   }
@@ -193,9 +193,13 @@ function patchClassList(_, oldVal, newVal, domNode) {
   for (name in newVal) {
     val = newVal[name];
     if (val !== oldVal[name]) {
-      domNode.classList[val ? "add" : "remove"](name)
+      patchClass(name, val, domNode)
     }
   }
+}
+
+function patchClass(name, val, domNode) {
+  val ? domNode.classList.add(name) : domNode.classList.remove(name)
 }
 
 function patchStyles(_, oldVal, newVal, domNode) {
