@@ -22,8 +22,8 @@ export default class Element {
 
   start() {
     if (this.ref++ === 0) {
-      this.ch.start()
       this.props.start()
+      this.ch.start()
     } else if (this.isReady()) {
       this.p.onChildReady(this)
     }
