@@ -112,12 +112,12 @@ function parse(selector) {
     ch = selector.charAt(i)
     switch (ch) {
       case ".":
-        s = selector.substring(p, (p = i))
+        s = selector.substring(p, (p = i + 1) - 1)
         t === 0 ? (tag = s) : t === 1 ? (id = s) : ((classes[s] = true) && nc++)
         t = 2
         break
       case "#":
-        s = selector.substring(p, (p = i))
+        s = selector.substring(p, (p = i + 1) - 1)
         t === 0 ? (tag = s) : t === 2 ? ((classes[s] = true) && nc++) : void 0
         t = 1
         break
