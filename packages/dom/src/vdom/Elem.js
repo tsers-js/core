@@ -1,6 +1,6 @@
 import Children from "./Children"
 import Props from "./Props"
-import {create} from "./index"
+import {create, mount, unmount, replace} from "./index"
 import {patchProps, patchProp} from "../patching"
 import {remove} from "../dom"
 
@@ -13,6 +13,7 @@ export default class Element {
     this.props = new Props(this, props)
     this.ch = new Children(this, ch)
     this.dom = null
+    this.ref = 0
   }
 
   accepts(node) {
@@ -20,30 +21,42 @@ export default class Element {
   }
 
   start() {
-    this.ch.start()
-    this.props.start()
+    if (this.ref++ === 0) {
+      this.ch.start()
+      this.props.start()
+    } else if (this.isReady()) {
+      this.p.onChildReady(this)
+    }
   }
 
-  stop(parentDOM) {
-    if (parentDOM) {
-      remove(parentDOM, this.dom)
-      this.dom = null
+  stop() {
+    if (--this.ref === 0) {
+      this.ch.stop()
+      this.props.stop()
     }
-    this.ch.stop()
-    this.props.stop()
   }
 
   create() {
     const dom = this.dom = document.createElement(this.tag)
     this.props.create(dom)
     this.ch.create(dom)
+    mount(this)
     return dom
   }
 
-  update({props, ch, dom}) {
+  update(prev) {
+    replace(prev, this)
+    const {props, ch, dom} = prev
     this.dom = dom
     this.props.update(props, dom)
     this.ch.update(ch, dom)
+  }
+
+  remove(parentDOM) {
+    remove(parentDOM, this.dom)
+    this.dom = null
+    this.ch.remove()
+    unmount(this)
   }
 
   onChildrenReady() {

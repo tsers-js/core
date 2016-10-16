@@ -18,5 +18,5 @@ export function append(parent, child) {
 }
 
 export function remove(parent, child) {
-  child && parent.removeChild(child)
+  parent && child && parent.removeChild(child)
 }

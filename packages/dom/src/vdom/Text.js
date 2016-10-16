@@ -1,3 +1,4 @@
+import {mount, unmount, replace} from "./index"
 import {remove} from "../dom"
 
 
@@ -13,29 +14,34 @@ export default class Text {
     return node instanceof Text
   }
 
-  start() {
-    this.p.onChildReady(this)
-  }
-
-  stop(parentDOM) {
-    if (parentDOM) {
-      remove(parentDOM, this.dom)
-      this.dom = null
-    }
-  }
-
   isReady() {
     return true
   }
 
+  start() {
+    this.p.onChildReady(this)
+  }
+
+  stop() {
+  }
+
   create() {
+    mount(this)
     return (this.dom = document.createTextNode(this.t))
   }
 
-  update({t, dom}) {
+  update(prev) {
+    replace(prev, this)
+    const {t, dom} = prev
     this.dom = dom
     if (this.t !== t) {
       dom.nodeValue = this.t
     }
+  }
+
+  remove(parentDOM) {
+    unmount(this)
+    remove(parentDOM, this.dom)
+    this.dom = null
   }
 }

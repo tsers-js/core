@@ -11,12 +11,16 @@ export default class Children {
     this.v = null
   }
 
+  isReady() {
+    return this.v !== null
+  }
+
   start() {
     this.c.start()
   }
 
-  stop(parentDOM) {
-    this.c.stop(parentDOM)
+  stop() {
+    this.c.stop()
   }
 
   create(parentDOM) {
@@ -30,8 +34,8 @@ export default class Children {
     console.log("TODO update children", previous, this)
   }
 
-  isReady() {
-    return this.v !== null
+  remove() {
+    removeNodes(this.v)
   }
 
   onChildren(children, idx) {
@@ -54,6 +58,7 @@ export default class Children {
   }
 }
 
+
 class Combine {
   constructor(ch, {v: list, m: mods}) {
     this.ch = ch
@@ -72,14 +77,16 @@ class Combine {
     }
   }
 
-  stop(parentDOM) {
+  stop() {
     this.d = stopMods(this.d)
-    stopNodes(this.v, parentDOM)
+    stopNodes(this.v)
   }
 
   onMod({ch, i}) {
     const prev = this.v[i], next = create(ch, this)
-    if (prev) {
+    if (next === prev) {
+      return
+    } else if (prev) {
       prev.isReady() && this.n++
       prev.stop()
     }
@@ -107,17 +114,18 @@ class FlatCombine {
     this.d = startMods(this.m, this)
   }
 
-  stop(parentDOM) {
+  stop() {
     const {act, pend} = this
-    this.act = null
-    act && act.stop(parentDOM)
+    act && act.stop()
     pend && pend !== act && pend.stop()
   }
 
   onMod(children) {
-    this.stop(null)
+    const {act, pend} = this
     this.pend = new Inner(this, children)
     this.pend.start()
+    act && act.stop()
+    pend && pend !== act && pend.stop()
   }
 
   onInnerReady(children) {
@@ -132,14 +140,15 @@ class Inner {
     this.o = outer
     this.v = createNodes(list, this)
     this.n = list.length
+    this.s = false
   }
 
   start() {
     this.n ? startNodes(this.v) : this.o.onInnerReady(this.v)
   }
 
-  stop(parentDOM) {
-    stopNodes(this.v, parentDOM)
+  stop() {
+    !this.s && (this.s = true) && stopNodes(this.v)
   }
 
   onChildReady() {
@@ -167,9 +176,16 @@ function startNodes(nodes) {
   }
 }
 
-function stopNodes(nodes, parentDOM) {
+function stopNodes(nodes) {
   let i = nodes.length, node
   while (i--) {
-    (node = nodes[i]) && node.stop(parentDOM)
+    (node = nodes[i]) && node.stop()
+  }
+}
+
+function removeNodes(nodes) {
+  let i = nodes.length, node
+  while (i--) {
+    (node = nodes[i]) && node.remove()
   }
 }

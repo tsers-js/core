@@ -46,7 +46,7 @@ export function patchChildAt(idx, prevCh, nextCh, parentDOM) {
   } else if (nextCh.accepts(prevCh)) {
     nextCh.update(prevCh)
   } else {
-    prevCh.stop(parentDOM)
+    prevCh.remove(parentDOM)
     insertTo(parentDOM, nextCh.create(), idx)
   }
 }
@@ -124,7 +124,7 @@ function patchByIdx(prevChildren, nextChildren, prevStartIndex, prevEndIndex, ne
         prevIdx < i && insertTo(parentDOM, nextCh.dom, i)
       } else {
         insertTo(parentDOM, nextCh.create(), i)
-        prevCh.stop(parentDOM)
+        prevCh.remove(parentDOM)
       }
       rm = rm.n
     } else {
@@ -135,7 +135,7 @@ function patchByIdx(prevChildren, nextChildren, prevStartIndex, prevEndIndex, ne
   let rmp = rm.p
   rmw = rmw.p
   while (rmp !== rmw) {
-    rmw.c.stop(parentDOM)
+    rmw.c.remove(parentDOM)
     rmw = rmw.p
   }
 }
@@ -155,7 +155,7 @@ function addAll(parentDOM, ch, startIdx, endIdx) {
 
 function removeAll(parentDOM, ch, startIdx, endIdx) {
   while (startIdx <= endIdx) {
-    ch[endIdx--].stop(parentDOM)
+    ch[endIdx--].remove(parentDOM)
   }
 }
 
