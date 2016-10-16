@@ -30,8 +30,9 @@ export default class Children {
     }
   }
 
-  update({v: previous}, parentDOM) {
-    console.log("TODO update children", previous, this)
+  update({v: prev}, parentDOM) {
+    const next = this.v
+    patchChildren(prev, next, parentDOM)
   }
 
   remove() {
