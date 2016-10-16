@@ -158,7 +158,7 @@ class Inner {
   }
 }
 
-function createNodes(vnodes, parent) {
+export function createNodes(vnodes, parent) {
   let n = vnodes.length, vnode
   if (!n) {
     return vnodes
@@ -168,6 +168,13 @@ function createNodes(vnodes, parent) {
     (vnode = vnodes[n]) && (nodes[n] = create(vnode, parent))
   }
   return nodes
+}
+
+export function removeNodes(nodes) {
+  let i = nodes.length, node
+  while (i--) {
+    (node = nodes[i]) && node.remove()
+  }
 }
 
 function startNodes(nodes) {
@@ -184,9 +191,3 @@ function stopNodes(nodes) {
   }
 }
 
-function removeNodes(nodes) {
-  let i = nodes.length, node
-  while (i--) {
-    (node = nodes[i]) && node.remove()
-  }
-}

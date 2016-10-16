@@ -1,8 +1,8 @@
 import {O, isObj, isArray, keys} from "@tsers/core"
-import {newId, isStr, isPrimitive} from "./util/base"
+import {newId, isStr, isPrimitive} from "./util"
 import {NodeTypes, VNODE, PPENDING} from "./consts"
 
-const {ELEM, TEXT} = NodeTypes
+const {ELEM, TEXT, STATIC_ELEM} = NodeTypes
 
 
 export default (SA) => {
@@ -12,7 +12,7 @@ export default (SA) => {
     O.map(fn, convertIn(obs))
 
   return function h(selector, props, children) {
-    let i
+    let i, ch, stat = true
     if (arguments.length === 1) {
       props = {}
       children = []
@@ -31,6 +31,7 @@ export default (SA) => {
     if (isObs(children)) {
       chm = []
       chm.push(toMod(children, children => children.map(toVNode)))
+      stat = false
     } else {
       children = isArray(children) ? children : [children]
       i = children.length
@@ -41,8 +42,10 @@ export default (SA) => {
           (i => {
             (chm || (chm = [])).push(toMod(child, child => ({ch: toVNode(child), i})))
           })(i)
+          stat = false
         } else {
-          chv[i] = toVNode(child)
+          chv[i] = ch = toVNode(child)
+          stat = stat && isStatic(ch)
         }
       }
     }
@@ -60,12 +63,13 @@ export default (SA) => {
         })(key, val)
         pv[key] = PPENDING
         ++pp
+        stat = false
       } else {
         pv[key] = val
       }
     }
 
-    return elem(sel.tag, {v: pv, m: pm, p: pp}, {v: chv, m: chm})
+    return elem(sel.tag, {v: pv, m: pm, p: pp}, {v: chv, m: chm}, stat)
   }
 }
 
@@ -74,11 +78,15 @@ function text(val) {
   return {id: newId(), _: VNODE, t: TEXT, text: val}
 }
 
-function elem(tag, props, ch) {
+function elem(tag, props, ch, isStatic) {
   return {
-    id: newId(), _: VNODE, t: ELEM,
+    id: newId(), _: VNODE, t: isStatic ? STATIC_ELEM : ELEM,
     tag, props, ch
   }
+}
+
+function isStatic(vnode) {
+  return vnode.t === STATIC_ELEM || vnode.t === TEXT
 }
 
 function toVNode(x) {

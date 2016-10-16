@@ -1,8 +1,10 @@
 import {NodeTypes} from "../consts"
 import Text from "./Text"
 import Element from "./Elem"
+import StaticElement from "./StaticElem"
 
-const {ELEM, TEXT} = NodeTypes
+const {ELEM, TEXT, STATIC_ELEM} = NodeTypes
+
 
 // TODO: implement non-ES6 compatible version with objects
 const cache = new Map()
@@ -17,6 +19,8 @@ export function create(vnode, parent) {
   switch (vnode.t) {
     case ELEM:
       return new Element(vnode, parent)
+    case STATIC_ELEM:
+      return new StaticElement(vnode, parent)
     case TEXT:
       return new Text(vnode, parent)
     default:

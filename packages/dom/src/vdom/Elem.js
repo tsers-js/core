@@ -1,7 +1,6 @@
 import Children from "./Children"
 import Props from "./Props"
 import {create, mount, unmount, replace} from "./index"
-import {patchProps, patchProp} from "../patching"
 import {remove} from "../dom"
 
 

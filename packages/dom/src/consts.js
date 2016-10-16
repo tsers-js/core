@@ -2,6 +2,7 @@ import {zipObj} from "@tsers/core"
 
 const ELEM = 0
 const TEXT = 1
+const STATIC_ELEM = 2
 
 const htmlAttrs =
   "accept accept-charset accesskey action align alt async autocomplete autofocus " +
@@ -38,6 +39,7 @@ const zipFlags = flagStr =>
 
 export const NodeTypes = {
   ELEM,
+  STATIC_ELEM,
   TEXT
 }
 
