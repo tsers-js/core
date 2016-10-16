@@ -1,6 +1,7 @@
 import {O, isObj, isArray, keys} from "@tsers/core"
 import {newId, isStr, isPrimitive} from "./util"
 import {NodeTypes, VNODE, PPENDING} from "./consts"
+import {makeEventListener} from "./events"
 
 const {ELEM, TEXT, STATIC_ELEM} = NodeTypes
 
@@ -8,6 +9,7 @@ const {ELEM, TEXT, STATIC_ELEM} = NodeTypes
 export default (SA) => {
   const isObs = x => x && SA.isValidStream(x)
   const convertIn = O.adaptIn(SA.streamSubscribe)
+  const convertOut = O.adaptOut(SA)
   const toMod = (obs, fn) =>
     O.map(fn, convertIn(obs))
 
@@ -71,32 +73,41 @@ export default (SA) => {
 
     return elem(sel.tag, {v: pv, m: pm, p: pp}, {v: chv, m: chm}, stat)
   }
-}
 
+  function makeEventsObs(selector, type) {
+    return convertOut(makeEventListener(this.id, selector, type))
+  }
 
-function text(val) {
-  return {id: newId(), _: VNODE, t: TEXT, text: val}
-}
+  function emptyEventsObs() {
+    return convertOut(O.never())
+  }
 
-function elem(tag, props, ch, isStatic) {
-  return {
-    id: newId(), _: VNODE, t: isStatic ? STATIC_ELEM : ELEM,
-    tag, props, ch
+  function text(val) {
+    return {id: newId(), _: VNODE, t: TEXT, text: val, on: emptyEventsObs}
+  }
+
+  function elem(tag, props, ch, isStatic) {
+    return {
+      id: newId(), _: VNODE, t: isStatic ? STATIC_ELEM : ELEM,
+      on: makeEventsObs,
+      tag, props, ch
+    }
+  }
+
+  function toVNode(x) {
+    return isVNode(x)
+      ? x
+      : (x === null || x === undefined || x === false)
+      ? text("")
+      : isPrimitive(x)
+      ? text(`${x}`)
+      : throws(`Not a valid virtual node ${x}`)
   }
 }
 
+
 function isStatic(vnode) {
   return vnode.t === STATIC_ELEM || vnode.t === TEXT
-}
-
-function toVNode(x) {
-  return isVNode(x)
-    ? x
-    : (x === null || x === undefined || x === false)
-    ? text("")
-    : isPrimitive(x)
-    ? text(`${x}`)
-    : throws(`Not a valid virtual node ${x}`)
 }
 
 function isVNode(x) {
