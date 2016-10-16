@@ -1,7 +1,7 @@
 import Children from "./Children"
 import Props from "./Props"
 import {create, mount, unmount, replace} from "./index"
-import {remove} from "../dom"
+import {createElement, remove} from "../dom"
 
 
 export default class Element {
@@ -36,7 +36,7 @@ export default class Element {
   }
 
   create() {
-    const dom = this.dom = document.createElement(this.tag)
+    const dom = this.dom = createElement(this.tag, this.id)
     this.props.create(dom)
     this.ch.create(dom)
     mount(this)

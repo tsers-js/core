@@ -20,3 +20,11 @@ export function append(parent, child) {
 export function remove(parent, child) {
   parent && child && parent.removeChild(child)
 }
+
+export function createElement(tag, id) {
+  return document.createElement(tag)
+}
+
+export function createText(text) {
+  return document.createTextNode(text)
+}

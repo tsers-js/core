@@ -1,7 +1,7 @@
 import {create, mount, unmount, replace} from "./index"
 import {createNodes, removeNodes} from "./Children"
 import {patchProps, patchChildren} from "../patching"
-import {append, remove} from "../dom"
+import {createElement, append, remove} from "../dom"
 
 
 export default class StaticElement {
@@ -30,7 +30,7 @@ export default class StaticElement {
   }
 
   create() {
-    const dom = this.dom = document.createElement(this.tag)
+    const dom = this.dom = createElement(this.tag, this.id)
     patchProps({}, this.props.v, dom)
     mountNodes(this.ch.v, dom)
     mount(this)

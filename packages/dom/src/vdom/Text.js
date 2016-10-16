@@ -1,5 +1,5 @@
 import {mount, unmount, replace} from "./index"
-import {remove} from "../dom"
+import {createText, remove} from "../dom"
 
 
 export default class Text {
@@ -26,8 +26,9 @@ export default class Text {
   }
 
   create() {
+    const dom = this.dom = createText(this.t)
     mount(this)
-    return (this.dom = document.createTextNode(this.t))
+    return dom
   }
 
   update(prev) {
