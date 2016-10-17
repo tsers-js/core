@@ -22,7 +22,9 @@ export function remove(parent, child) {
 }
 
 export function createElement(tag, id) {
-  return document.createElement(tag)
+  const dom = document.createElement(tag)
+  dom.__nodeid = id
+  return dom
 }
 
 export function createText(text) {

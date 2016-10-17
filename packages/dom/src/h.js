@@ -1,12 +1,12 @@
 import {O, isObj, isArray, keys} from "@tsers/core"
-import {newId, isStr, isPrimitive} from "./util"
+import {newId, isStr, isPrimitive, throws} from "./util"
 import {NodeTypes, VNODE, PPENDING} from "./consts"
 import {makeEventListener} from "./events"
 
 const {ELEM, TEXT, STATIC_ELEM} = NodeTypes
 
 
-export default (SA) => {
+export default (SA, events) => {
   const isObs = x => x && SA.isValidStream(x)
   const convertIn = O.adaptIn(SA.streamSubscribe)
   const convertOut = O.adaptOut(SA)
@@ -74,8 +74,8 @@ export default (SA) => {
     return elem(sel.tag, {v: pv, m: pm, p: pp}, {v: chv, m: chm}, stat)
   }
 
-  function makeEventsObs(selector, type) {
-    return convertOut(makeEventListener(this.id, selector, type))
+  function makeEventsObs(selector, type, capture) {
+    return convertOut(makeEventListener(events, this.id, selector, type, capture))
   }
 
   function emptyEventsObs() {
@@ -143,6 +143,3 @@ function parse(selector) {
   }
 }
 
-function throws(msg) {
-  throw new Error(msg)
-}

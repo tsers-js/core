@@ -37,3 +37,7 @@ export const stopMods = dispose => {
   dispose && dispose()
   return void 0
 }
+
+export const throws = (msg) => {
+  throw new Error(msg)
+}

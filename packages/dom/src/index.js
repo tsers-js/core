@@ -2,6 +2,7 @@ import {__, O} from "@tsers/core"
 import {isStr} from "./util"
 import {create} from "./vdom"
 import H from "./h"
+import {Events} from "./events"
 
 
 export default function (domRoot) {
@@ -17,8 +18,9 @@ export default function (domRoot) {
   }
 
   function DOMDriver(vdom, SA) {
+    const events = new Events()
     const convertIn = O.adaptIn(SA.streamSubscribe)
-    const h = H(SA)
+    const h = H(SA, events)
     const lift = Lift(SA)
 
     domRoot = isStr(domRoot) ? document.querySelector(domRoot) : domRoot
@@ -30,6 +32,7 @@ export default function (domRoot) {
           }
         })
         appRoot.start()
+        events.mount(domRoot)
       }
     }))
 
