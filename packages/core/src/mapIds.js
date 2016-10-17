@@ -4,55 +4,60 @@ import curry from "./curry"
 
 
 export default curry(function mapIds(f, streamOfIds) {
-  let index = {}, n = 0
+  const index = {
+    entries: {},
+    n: 0
+  }
   return __(streamOfIds,
     O.skipRepeats(idsEq),
     O.tapOnDispose(() => {
-      n = 0
-      keys(index).forEach(id => {
-        disposeEntry(index[id])
-        delete index[id]
-      })
+      let {entries} = index, k = keys(entries), i = k.length
+      index.n = 0
+      index.entries = {}
+      while (i--) {
+        const id = k[i]
+        disposeEntry(entries[id])
+      }
     }),
-    O.map(ids => {
-      const idxById = {}
-      ids.forEach((id, idx) => idxById[id] = idx)
+    O.map(({list: ids, index: idxById}) => {
+      const {entries} = index
+      let k = keys(entries), i = k.length, res = Array(ids.length), id, entry
       // remove deleted entries
-      keys(index).forEach(id => {
+      while (i--) {
+        id = k[i]
         if (!(id in idxById)) {
-          disposeEntry(index[id])
-          delete index[id]
-          n--
+          disposeEntry(entries[id])
+          delete entries[id]
+          --index.n
         }
-      })
-      // add new entries or update already existing ones
-      keys(idxById).forEach(id => {
-        if (id in index) {
-          index[id].idx = idxById[id]
+      }
+      // add new entries to index and construct return value array
+      // at the same time
+      (k = ids) && (i = k.length)
+      while (i--) {
+        id = k[i]
+        if (id in entries) {
+          entry = entries[id]
         } else {
-          index[id] = {id, idx: idxById[id], val: f(id)}
-          n++
+          entry = entries[id] = f(id)
+          ++index.n
         }
-      })
-      // use index values from "index" to construct the resulting array
-      const res = Array(n)
-      keys(index).forEach(id => {
-        const entry = index[id]
-        res[entry.idx] = entry.val
-      })
+        res[i] = entry
+      }
       return res
     })
   )
 })
 
-const idsEq = (a, b) => {
+const idsEq = ({list: a}, {list: b}) => {
   if (a.length !== b.length) return false
-  for (let i = 0; i < a.length; i++) {
+  let i = a.length
+  while (i--) {
     if (a[i] !== b[i]) return false
   }
   return true
 }
 
-const disposeEntry = ({val}) => {
-  val && isFun(val.dispose) && val.dispose()
+const disposeEntry = entry => {
+  entry && isFun(entry.dispose) && entry.dispose()
 }

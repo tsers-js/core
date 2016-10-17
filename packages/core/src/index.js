@@ -10,6 +10,7 @@ export {
   isFun,
   isDef,
   isObj,
+  isStr,
   isArray,
   pipe,
   comp,

@@ -10,6 +10,8 @@ export const isObj = x => x ? x.constructor === Object : false
 
 export const isArray = Array.isArray || isArrayPolyfill
 
+export const isStr = x => typeof x === "string"
+
 export const pipe = (fn, ...fns) =>
   fns.length ? fns.reduce((g, f) => x => f(g(x)), fn) : fn
 

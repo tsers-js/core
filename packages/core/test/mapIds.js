@@ -1,10 +1,15 @@
-import {mapIds, O, __} from "../src/index"
+import {O, __, zipObj, mapIds} from "../src/index"
 
+
+const indexed = ids => ({
+  list: ids,
+  index: zipObj(ids.map((id, idx) => [id, idx]))
+})
 
 describe("mapIds", () => {
   it("maps same sequential id only once", done => {
-    const expected = ["id1", "id2", "id3", "id4"]
-    const ids = O.from([["id1", "id2", "id3"], ["id1", "id2", "id3", "id4"]])
+    const expected = ["id3", "id2", "id1", "id4"]
+    const ids = O.from([["id1", "id2", "id3"], ["id1", "id2", "id3", "id4"]].map(indexed))
     __(ids,
       mapIds(id => {
         id.should.equal(expected.shift())
@@ -21,7 +26,7 @@ describe("mapIds", () => {
 
   it("skips repeats if id sequence doesn't change", done => {
     let count = 0
-    const ids = O.from([["id1", "id2"], ["id1", "id2"], ["id1", "id2"]])
+    const ids = O.from([["id1", "id2"], ["id1", "id2"], ["id1", "id2"]].map(indexed))
     __(ids,
       mapIds(id => {
         count++
@@ -37,7 +42,7 @@ describe("mapIds", () => {
   })
 
   it("disposes its values when stream completes if values have 'dispose' function", done => {
-    const ids = O.from([["id1", "id2"], ["id1", "id2"], ["id1", "id2"]])
+    const ids = O.from([["id1", "id2"], ["id1", "id2"], ["id1", "id2"]].map(indexed))
     const disposed = new Set()
     __(ids,
       mapIds(id => ({
