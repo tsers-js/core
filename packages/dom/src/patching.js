@@ -118,7 +118,7 @@ function patchByIdx(prevChildren, nextChildren, prevStartIndex, prevEndIndex, ne
     prevIdx = prevIdxById[nextCh.id]
     if (prevIdx) {
       prevIdx < i && insertTo(parentDOM, nextCh.dom, i)
-    } else if (prevCh = rm.c) {
+    } else if (prevCh = rm.c) {       // eslint-disable-line no-cond-assign
       if (nextCh.accepts(prevCh)) {
         nextCh.update(prevCh)
         prevIdx < i && insertTo(parentDOM, nextCh.dom, i)
@@ -191,7 +191,7 @@ function patchClassList(_, oldVal, newVal, domNode) {
     }
   }
   for (name in newVal) {
-    val = newVal[name];
+    val = newVal[name]
     if (val !== oldVal[name]) {
       patchClass(name, val, domNode)
     }
@@ -214,7 +214,7 @@ function patchStyles(_, oldVal, newVal, domNode) {
     }
   }
   for (name in newVal) {
-    val = newVal[name];
+    val = newVal[name]
     if (val !== oldVal[name]) {
       domNode.style[name] = val || ""
     }

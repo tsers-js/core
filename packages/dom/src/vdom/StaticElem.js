@@ -1,4 +1,4 @@
-import {create, mount, unmount, replace} from "./index"
+import {mount, unmount, replace} from "./index"
 import {createNodes, removeNodes} from "./Children"
 import {patchProps, patchChildren} from "../patching"
 import {createElement, append, remove} from "../dom"

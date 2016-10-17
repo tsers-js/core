@@ -1,7 +1,5 @@
-import index from "../src/index"
-
-describe("index default export", () => {
-  it("should return package name", () => {
-    index().should.equal("dom")
+describe("DOM tests", () => {
+  it("should test nothing", () => {
+    (1 === 1).should.be.true()
   })
 })

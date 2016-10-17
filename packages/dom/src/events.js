@@ -1,4 +1,4 @@
-import {O, __} from "@tsers/core"
+import {__, O, defer} from "@tsers/core"
 import matches from "matches-selector"
 
 
@@ -99,7 +99,6 @@ class Listener {
     if (this.n && !this.l && this.e.dom) {
       this.l = event => this.e.delegate(event, this.t)
       this.e.dom.addEventListener(this.t, this.l, this.c)
-      console.log("event listener added", this.t, this.c)
     }
   }
 

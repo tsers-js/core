@@ -1,4 +1,4 @@
-import {O, __} from "@tsers/core"
+import {O} from "@tsers/core"
 import {isVNode, lifted} from "./h"
 import {throws} from "./util"
 
