@@ -19,6 +19,7 @@ export {
   always,
   zipObj,
   find,
-  doPipe as __
+  doPipe as __,
+  defer
 } from "./util"
 

@@ -54,3 +54,7 @@ export const find = (pred, xs) => {
     }
   }
 }
+
+export const defer = fn => {
+  Promise.resolve(undefined).then(fn)
+}
