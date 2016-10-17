@@ -31,8 +31,7 @@
     "report:ci": ".bin/nyc report --reporter=lcov"
   },
   "dependencies": {
-    "@tsers/core": "^3.0.0",
-    "partial.lenses": "^3.8.0"
+    "@tsers/core": "^3.0.0"
   },
   "devDependencies": {
     "ramda": "^0.22.1",
