@@ -31,7 +31,8 @@
     "report:ci": ".bin/nyc report --reporter=lcov"
   },
   "dependencies": {
-    "@tsers/core": "^3.0.0"
+    "@tsers/core": "^3.0.0",
+    "matches-selector": "^1.0.0"
   },
   "devDependencies": {
     "should": "^11.1.0"

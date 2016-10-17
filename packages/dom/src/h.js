@@ -3,7 +3,7 @@ import {newId, isStr, isPrimitive, throws} from "./util"
 import {NodeTypes, VNODE, PPENDING} from "./consts"
 import {makeEventListener} from "./events"
 
-const {ELEM, TEXT, STATIC_ELEM} = NodeTypes
+const {ELEM, TEXT, STATIC_ELEM, LIFTED} = NodeTypes
 
 
 export default (SA, events) => {
@@ -40,7 +40,7 @@ export default (SA, events) => {
       chv = Array(i)
       while (i--) {
         const child = children[i]
-        if (isObs(child)) {
+        if (isObs(child) && !isLiftedObs(child)) {
           (i => {
             (chm || (chm = [])).push(toMod(child, child => ({ch: toVNode(child), i})))
           })(i)
@@ -101,17 +101,27 @@ export default (SA, events) => {
       ? text("")
       : isPrimitive(x)
       ? text(`${x}`)
+      : isLiftedObs(x)
+      ? x.__vnode
       : throws(`Not a valid virtual node ${x}`)
   }
 }
 
-
-function isStatic(vnode) {
-  return vnode.t === STATIC_ELEM || vnode.t === TEXT
+export function isVNode(x) {
+  return x && x._ === VNODE
 }
 
-function isVNode(x) {
-  return x && x._ === VNODE
+export function lifted(vnode) {
+  return {_: VNODE, t: LIFTED, n: vnode}
+}
+
+function isStatic(vnode) {
+  const {t} = vnode
+  return t === STATIC_ELEM || t === TEXT || (t === LIFTED && isStatic(vnode.n))
+}
+
+function isLiftedObs(x) {
+  return isVNode(x.__vnode)
 }
 
 // parses selector into object {tag: <str>, id: <str>?, classes: {<str>: true}?}

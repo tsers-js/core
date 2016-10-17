@@ -2,8 +2,9 @@ import {NodeTypes} from "../consts"
 import Text from "./Text"
 import Element from "./Elem"
 import StaticElement from "./StaticElem"
+import Lifted from "./Lifted"
 
-const {ELEM, TEXT, STATIC_ELEM} = NodeTypes
+const {ELEM, TEXT, STATIC_ELEM, LIFTED} = NodeTypes
 
 
 // TODO: implement non-ES6 compatible version with objects
@@ -23,6 +24,8 @@ export function create(vnode, parent) {
       return new StaticElement(vnode, parent)
     case TEXT:
       return new Text(vnode, parent)
+    case LIFTED:
+      return new Lifted(vnode, parent)
     default:
       return null
   }

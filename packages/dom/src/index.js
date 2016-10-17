@@ -2,21 +2,11 @@ import {__, O} from "@tsers/core"
 import {isStr} from "./util"
 import {create} from "./vdom"
 import H from "./h"
+import Lift from "./lift"
 import {Events} from "./events"
 
 
 export default function (domRoot) {
-
-  function Lift(SA) {
-    const convertOut = O.adaptOut(SA)
-
-    return function lift(vdom) {
-      const out = convertOut(O.of(vdom))
-      out.__vnode = vdom
-      return out
-    }
-  }
-
   function DOMDriver(vdom, SA) {
     const events = new Events()
     const convertIn = O.adaptIn(SA.streamSubscribe)
@@ -36,9 +26,10 @@ export default function (domRoot) {
       }
     }))
 
-    return {
-      h, lift
-    }
+    const Source = lift
+    Source.h = h
+    Source.lift = lift
+    return Source
   }
 
   DOMDriver.streamAdapter = O.Adapter
