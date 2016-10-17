@@ -21,6 +21,8 @@ export {
   zipObj,
   find,
   doPipe as __,
-  defer
+  defer,
+  index,
+  throws
 } from "./util"
 

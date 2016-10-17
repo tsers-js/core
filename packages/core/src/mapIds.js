@@ -19,13 +19,13 @@ export default curry(function mapIds(f, streamOfIds) {
         disposeEntry(entries[id])
       }
     }),
-    O.map(({list: ids, index: idxById}) => {
+    O.map(({list: ids, index: newIdx}) => {
       const {entries} = index
       let k = keys(entries), i = k.length, res = Array(ids.length), id, entry
       // remove deleted entries
       while (i--) {
         id = k[i]
-        if (!(id in idxById)) {
+        if (!(id in newIdx)) {
           disposeEntry(entries[id])
           delete entries[id]
           --index.n

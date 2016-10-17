@@ -23,6 +23,13 @@ export const comp = (fn, ...fns) =>
 
 export const keys = Object.keys
 
+export const index = idents => {
+  let idx = {}, i = idents.length
+  while (i--) {
+    idx[idents[i]] = i
+  }
+  return idx
+}
 
 export const extend = (a, b, c, d) => {
   b && _extend(a, b)
@@ -59,4 +66,8 @@ export const find = (pred, xs) => {
 
 export const defer = fn => {
   Promise.resolve(undefined).then(fn)
+}
+
+export const throws = msg => {
+  throw new Error(msg)
 }

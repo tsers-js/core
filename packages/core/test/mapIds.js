@@ -1,9 +1,9 @@
-import {O, __, zipObj, mapIds} from "../src/index"
+import {O, __, mapIds, index} from "../src/index"
 
 
 const indexed = ids => ({
   list: ids,
-  index: zipObj(ids.map((id, idx) => [id, idx]))
+  index: index(ids)
 })
 
 describe("mapIds", () => {
