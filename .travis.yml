@@ -3,6 +3,7 @@ node_js:
   - "4.2.0"
   - "5.5.0"
 script:
+  - npm run build
   - npm run test:ci
 after_success:
   # make reports and combine them
