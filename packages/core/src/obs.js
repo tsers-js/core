@@ -1,5 +1,5 @@
-import most from "most"
-import mcreate from "@most/create"
+import * as most from "most"
+import {create as mcreate} from "@most/create"
 import mhold from "@most/hold"
 import {subject} from "most-subject"
 import curry from "./curry"
