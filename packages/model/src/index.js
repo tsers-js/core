@@ -6,9 +6,9 @@ import makeModel from "./model"
 
 export default function (initial, opts = {}) {
   const {
-    eq = (a, b) => a === b,
-    warn = (...args) => console.warn(...args),      // eslint-disable-line
-    error = (...args) => console.error(...args),    // eslint-disable-line
+    eq = defaultEquality,
+    warn = defaultWarn,
+    error = defaultError,
     } = opts
 
 
@@ -32,4 +32,18 @@ export default function (initial, opts = {}) {
 
   ModelDriver.streamAdapter = O.Adapter
   return ModelDriver
+}
+
+function defaultEquality(a, b) {
+  return a === b
+}
+
+function defaultWarn() {
+  const args = Array.prototype.slice.call(arguments)
+  console.warn(args)      // eslint-disable-line
+}
+
+function defaultError() {
+  const args = Array.prototype.slice.call(arguments)
+  console.error(args)     // eslint-disable-line
 }
