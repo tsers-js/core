@@ -23,6 +23,7 @@
     "build": "lerna run build",
     "init": "lerna bootstrap && lerna run update:binaries",
     "test": "lerna run test",
+    "clean": "lerna run clean",
     "update-deps": "ncu -u -a && lerna run update:modules",
     "create-package": "lehm create package"
   },

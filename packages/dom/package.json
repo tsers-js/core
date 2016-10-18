@@ -30,7 +30,8 @@
     "build": "npm run build:commonjs && npm run build:umd && npm run build:minify",
     "prebuild": ".bin/rimraf dist && mkdir -p dist",
     "test:ci": ".bin/nyc npm t",
-    "report:ci": ".bin/nyc report --reporter=lcov"
+    "report:ci": ".bin/nyc report --reporter=lcov",
+    "clean": "rm -rf dist lib node_modules .bin"
   },
   "dependencies": {
     "@tsers/core": "^3.0.0",
