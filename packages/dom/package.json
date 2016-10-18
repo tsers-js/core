@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "update": "npm run update:binaries && npm run update:modules",
-    "update:modules": "../../node_modules/.bin/ncu -e 2 -u -a --packageFile ./package.json",
+    "update:modules": "../../node_modules/.bin/ncu -u -a --packageFile ./package.json && npm i",
     "update:binaries": "rm -f .bin && ln -s ../../node_modules/.bin .bin",
     "test": "npm run lint && npm run mocha:all",
     "lint": ".bin/eslint -c ../../.eslintrc src/** test/**",
@@ -37,7 +37,7 @@
     "matches-selector": "^1.0.0"
   },
   "devDependencies": {
-    "should": "^11.1.0"
+    "should": "^11.1.1"
   },
   "nyc": {
     "extension": [
