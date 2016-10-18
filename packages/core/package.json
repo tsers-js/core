@@ -23,12 +23,20 @@
     "lint": ".bin/eslint -c ../../.eslintrc src/** test/**",
     "mocha:all": "npm run mocha -- --recursive test",
     "mocha": ".bin/mocha --opts ../../mocha.opts",
+    "build:commonjs": ".bin/buble --no modules -i src -o lib",
+    "postbuild:commonjs": "NODE_PATH=../../node_modules .bin/babel --plugins transform-es2015-modules-commonjs lib -d lib",
     "build:umd": "NODE_PATH=../../node_modules .bin/rollup -c",
     "build:minify": ".bin/uglifyjs dist/tsers.core.js -o dist/tsers.core.min.js",
-    "build": "npm run build:umd && npm run build:minify",
+    "build": "npm run build:commonjs && npm run build:umd && npm run build:minify",
     "prebuild": ".bin/rimraf dist && mkdir -p dist",
     "test:ci": ".bin/nyc npm t",
     "report:ci": ".bin/nyc report --reporter=lcov"
+  },
+  "dependencies": {
+    "@most/create": "^1.1.3",
+    "@most/hold": "^1.3.1",
+    "most": "^1.0.1",
+    "most-subject": "^4.1.3"
   },
   "devDependencies": {
     "@cycle/xstream-adapter": "^3.0.3",
@@ -42,11 +50,5 @@
     "include": [
       "src/*.js"
     ]
-  },
-  "dependencies": {
-    "@most/create": "^1.1.3",
-    "@most/hold": "^1.3.1",
-    "most": "^1.0.1",
-    "most-subject": "^4.1.3"
   }
 }

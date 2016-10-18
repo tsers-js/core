@@ -23,9 +23,11 @@
     "lint": ".bin/eslint -c ../../.eslintrc src/** test/**",
     "mocha:all": "npm run mocha -- --recursive test",
     "mocha": ".bin/mocha --opts ../../mocha.opts",
+    "build:commonjs": ".bin/buble --no modules -i src -o lib",
+    "postbuild:commonjs": "NODE_PATH=../../node_modules .bin/babel --plugins transform-es2015-modules-commonjs lib -d lib",
     "build:umd": "NODE_PATH=../../node_modules .bin/rollup -c",
     "build:minify": ".bin/uglifyjs dist/tsers.dom.js -o dist/tsers.dom.min.js",
-    "build": "npm run build:umd && npm run build:minify",
+    "build": "npm run build:commonjs && npm run build:umd && npm run build:minify",
     "prebuild": ".bin/rimraf dist && mkdir -p dist",
     "test:ci": ".bin/nyc npm t",
     "report:ci": ".bin/nyc report --reporter=lcov"

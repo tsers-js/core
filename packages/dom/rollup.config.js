@@ -1,5 +1,6 @@
 import buble from "rollup-plugin-buble"
 import nodeResolve from "rollup-plugin-node-resolve"
+import commonjs from "rollup-plugin-commonjs"
 
 export default {
   entry: "src/index.js",
@@ -12,7 +13,16 @@ export default {
     nodeResolve({
       jsnext: true,
       main: true,
-      browser: true
+      module: true
+    }),
+    commonjs({
+      include: "node_modules/**"
     })
-  ]
+  ],
+  external: [
+    "@tsers/core"
+  ],
+  globals: {
+    "@tsers/core": "TSERS.Core"
+  }
 }
