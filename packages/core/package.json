@@ -4,7 +4,7 @@
   "description": "TSERSful core utils",
   "author": "Matti Lankinen <m.lankinen@iki.fi> (https://github.com/milankinen)",
   "license": "MIT",
-  "main": "dist/tsers.core.js",
+  "main": "lib/index.js",
   "esnext:main": "src/index.js",
   "homepage": "https://github.com/tsers-js/tsers/tree/master/core",
   "repository": {

@@ -4,7 +4,7 @@
   "description": "TSERSful DOM driver",
   "author": "Matti Lankinen <m.lankinen@iki.fi> (https://github.com/milankinen)",
   "license": "MIT",
-  "main": "dist/tsers.dom.js",
+  "main": "lib/index.js",
   "esnext:main": "src/index.js",
   "homepage": "https://github.com/tsers-js/tsers/tree/master/dom",
   "repository": {
