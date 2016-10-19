@@ -29,10 +29,16 @@ export const scan = curry(most.scan)
 export const tap = curry(most.tap)
 
 export const combine = curry(function combine(streams) {
-  return most.combineArray((...args) => args, streams)
+  return !streams.length ? most.just([]) : most.combineArray(function () {
+    let a = arguments, i = a.length, comb = Array(i)
+    while (i--) comb[i] = a[i]
+    return comb
+  }, streams)
 })
 
-export const merge = curry(most.mergeArray)
+export const merge = curry(function merge(streams) {
+  return streams.length ? most.mergeArray(streams) : empty()
+})
 
 export const switchLatest = curry(most.switch)
 
