@@ -1,97 +1,88 @@
 import {O, isObj, isArray, keys} from "@tsers/core"
-import {newId, isStr, isPrimitive, throws} from "./util"
-import {NodeTypes, VNODE, PPENDING} from "./consts"
-import {makeEventListener} from "./events"
-
-const {ELEM, TEXT, STATIC_ELEM, LIFTED} = NodeTypes
+import {isStr, isPrimitive, throws} from "./util"
+import {PPENDING} from "./consts"
 
 
-export default (SA, events) => {
+export default (SA, {newId, Nodes: {Text, Element, StaticElement}}) => {
   const isObs = x => x && SA.isValidStream(x)
   const convertIn = O.adaptIn(SA.streamSubscribe)
-  const convertOut = O.adaptOut(SA)
   const toMod = (obs, fn) =>
     O.map(fn, convertIn(obs))
 
-  return function h(selector, props, children) {
-    let i, ch, stat = true
-    if (arguments.length === 1) {
-      props = {}
-      children = []
-    } else if (arguments.length === 2) {
-      if (isObj(props)) {
-        children = []
-      } else {
+
+  return function h(_selector, _props, _children) {
+    let selector = _selector, props = _props, children = _children
+    if (arguments.length === 2) {
+      if (!isObj(props)) {
         children = props
-        props = {}
+        props = null
       }
     }
 
     const sel = parse(selector)
+    const p = toProps(props, sel)
+    const c = toCh(children)
+    return elem(sel.tag, p.val, c.val, p.static && c.static)
+  }
 
-    let chv = null, chm = null
-    if (isObs(children)) {
-      chm = []
-      chm.push(toMod(children, children => children.map(toVNode)))
-      stat = false
-    } else {
-      children = isArray(children) ? children : [children]
-      i = children.length
-      chv = Array(i)
-      while (i--) {
-        const child = children[i]
-        if (isObs(child) && !isLiftedObs(child)) {
-          (i => {
-            (chm || (chm = [])).push(toMod(child, child => ({ch: toVNode(child), i})))
-          })(i)
-          stat = false
-        } else {
-          chv[i] = ch = toVNode(child)
-          stat = stat && isStatic(ch)
-        }
-      }
+
+  function toProps(props, sel) {
+    if (!props) {
+      return {val: {v: fromSel(sel), m: null, p: 0}, static: true}
     }
 
-    const pKeys = keys(props)
-    let pv = {}, pm = null, pp = 0
-    sel.id && (pv.id = sel.id)
-    sel.classes && (pv.class = sel.classes)
-    i = pKeys.length
+    let pk = keys(props), i = pk.length
+    let pv = fromSel(sel), res = {val: {v: pv, m: null, p: 0}, static: true}
+
     while (i--) {
-      const key = pKeys[i], val = props[key]
-      if (isObs(val)) {
-        ((key, val) => {
-          (pm || (pm = [])).push(toMod(val, prop => ({k: key, v: prop})))
-        })(key, val)
-        pv[key] = PPENDING
-        ++pp
-        stat = false
+      const key = pk[i], val = props[key]
+      isObs(val) ? setObsProp(res, key, val) : pv[key] = val
+    }
+    return res
+  }
+
+  function fromSel(sel) {
+    const props = {}
+    sel.id && (props.id = sel.id)
+    sel.classes && (props.class = sel.classes)
+    return props
+  }
+
+  function setObsProp(props, key, obs) {
+    props.val.v[key] = PPENDING
+    ;(props.val.m || (props.val.m = [])).push(toMod(obs, prop => ({k: key, v: prop})))
+    ++props.val.p
+    props.static = false
+  }
+
+  function toCh(children) {
+    if (!children) {
+      return {val: {v: [], m: null}, static: true}
+    } else if (isObs(children)) {
+      return {val: {v: null, m: [toMod(children, ch => ch.map(toVNode))]}, static: false}
+    } else {
+      return toFixedCh(isArray(children) ? children : [children])
+    }
+  }
+
+  function toFixedCh(children) {
+    let i = children.length, chv = Array(i), s = true
+    let res = {val: {v: chv, m: null}, static: true}
+    while (i--) {
+      const ch = children[i]
+      if (isObs(ch) && !isLiftedObs(ch)) {
+        setObsChAt(res, i, ch)
+        s = false
       } else {
-        pv[key] = val
+        s = (chv[i] = toVNode(ch)).static && s
       }
     }
-
-    return elem(sel.tag, {v: pv, m: pm, p: pp}, {v: chv, m: chm}, stat)
+    res.static = s
+    return res
   }
 
-  function makeEventsObs(selector, type, capture) {
-    return convertOut(makeEventListener(events, this.id, selector, type, capture))
-  }
-
-  function emptyEventsObs() {
-    return convertOut(O.never())
-  }
-
-  function text(val) {
-    return {id: newId(), _: VNODE, t: TEXT, text: val, on: emptyEventsObs}
-  }
-
-  function elem(tag, props, ch, isStatic) {
-    return {
-      id: newId(), _: VNODE, t: isStatic ? STATIC_ELEM : ELEM,
-      on: makeEventsObs,
-      tag, props, ch
-    }
+  function setObsChAt(ch, i, obs) {
+    (ch.val.m || (ch.val.m = [])).push(toMod(obs, child => ({ch: toVNode(child), i})))
   }
 
   function toVNode(x) {
@@ -105,24 +96,26 @@ export default (SA, events) => {
       ? x.__vnode
       : throws(`Not a valid virtual node ${x}`)
   }
+
+  function elem(tag, props, ch, staticElem) {
+    return staticElem
+      ? new StaticElement(newId(), tag, props, ch)
+      : new Element(newId(), tag, props, ch)
+  }
+
+  function text(t) {
+    return new Text(newId(), t)
+  }
+
+  function isVNode(x) {
+    return x && x.__isNode
+  }
+
+  function isLiftedObs(x) {
+    return isVNode(x.__vnode)
+  }
 }
 
-export function isVNode(x) {
-  return x && x._ === VNODE
-}
-
-export function lifted(vnode) {
-  return {id: newId(), _: VNODE, t: LIFTED, n: vnode}
-}
-
-function isStatic(vnode) {
-  const {t} = vnode
-  return t === STATIC_ELEM || t === TEXT || (t === LIFTED && isStatic(vnode.n))
-}
-
-function isLiftedObs(x) {
-  return isVNode(x.__vnode)
-}
 
 // parses selector into object {tag: <str>, id: <str>?, classes: {<str>: true}?}
 // t: 0 = tag, 1 = id, 2 = class

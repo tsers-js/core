@@ -1,61 +1,79 @@
-import {mount, unmount, replace} from "./index"
-import {createNodes, removeNodes} from "./Children"
-import {patchProps, patchChildren} from "../patching"
-import {createElement, append, remove} from "../dom"
+export default ({link, mount, unmount, replace, domApi, patch: {patchProps, patchChildren}, events}) => {
+  class StaticElement {
+    constructor(id, tag, props, ch) {
+      this.id = id
+      this.tag = tag
+      this.props = props
+      this.ch = {v: linkNodes(ch.v, this)}
+      this.p = this.dom = null
+    }
 
+    accepts(node) {
+      return node && this.tag === node.tag
+    }
 
-export default class StaticElement {
-  constructor({id, tag, props, ch}, parent) {
-    this.id = id
-    this.tag = tag
-    this.p = parent
-    this.props = props
-    this.ch = {v: createNodes(ch.v, this)}
-    this.dom = null
+    isReady() {
+      return true
+    }
+
+    start() {
+      this.p.onChildReady(this)
+    }
+
+    stop() {
+    }
+
+    create() {
+      const dom = this.dom = domApi.createElement(this.tag, this.id)
+      patchProps({}, this.props.v, dom)
+      mountNodes(this.ch.v, dom)
+      mount(this)
+      return dom
+    }
+
+    update(prev) {
+      replace(prev, this)
+      const {props, ch, dom} = prev
+      this.dom = dom
+      patchProps(props.v, this.props.v, dom)
+      patchChildren(ch.v, this.ch.v, dom)
+    }
+
+    remove(parentDOM) {
+      domApi.remove(parentDOM, this.dom)
+      this.dom = null
+      removeNodes(this.ch.v)
+      unmount(this)
+    }
+
+    on(selector, type, capture) {
+      return events.toObs(this.id, selector, type, capture)
+    }
   }
 
-  accepts(node) {
-    return node && this.tag === node.tag
+  function linkNodes(vnodes, parent) {
+    let n = vnodes.length, vnode
+    while (n--) {
+      (vnode = vnodes[n]) && link(vnode, parent)
+    }
+    return vnodes
   }
 
-  isReady() {
-    return true
+  function removeNodes(nodes) {
+    let i = nodes.length, node
+    while (i--) {
+      (node = nodes[i]) && node.remove()
+    }
   }
 
-  start() {
-    this.p.onChildReady(this)
+  function mountNodes(nodes, dom) {
+    for (let i = 0, n = nodes.length; i < n; ++i) {
+      domApi.append(dom, nodes[i].create())
+    }
   }
 
-  stop() {
-  }
-
-  create() {
-    const dom = this.dom = createElement(this.tag, this.id)
-    patchProps({}, this.props.v, dom)
-    mountNodes(this.ch.v, dom)
-    mount(this)
-    return dom
-  }
-
-  update(prev) {
-    replace(prev, this)
-    const {props, ch, dom} = prev
-    this.dom = dom
-    patchProps(props.v, this.props.v, dom)
-    patchChildren(ch.v, this.ch.v, dom)
-  }
-
-  remove(parentDOM) {
-    remove(parentDOM, this.dom)
-    this.dom = null
-    removeNodes(this.ch.v)
-    unmount(this)
-  }
+  StaticElement.prototype.static = true
+  StaticElement.prototype.__isNode = true
+  return StaticElement
 }
 
-
-function mountNodes(nodes, dom) {
-  for (let i = 0, n = nodes.length; i < n; ++i) {
-    append(dom, nodes[i].create())
-  }
-}

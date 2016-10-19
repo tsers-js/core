@@ -1,72 +1,84 @@
-import Children from "./Children"
-import Props from "./Props"
-import {mount, unmount, replace} from "./index"
-import {createElement, remove} from "../dom"
+import _Children from "./Children"
+import _Props from "./Props"
 
 
-export default class Element {
-  constructor({id, tag, props, ch}, parent) {
-    this.id = id
-    this.tag = tag
-    this.p = parent
-    this.props = new Props(this, props)
-    this.ch = new Children(this, ch)
-    this.dom = null
-    this.ref = 0
-  }
+export default (ctx) => {
+  const {mount, unmount, replace, domApi, events} = ctx
 
-  accepts(node) {
-    return node instanceof Element && this.tag === node.tag
-  }
+  const Children = _Children(ctx)
+  const Props = _Props(ctx)
 
-  start() {
-    if (this.ref++ === 0) {
-      this.props.start()
-      this.ch.start()
-    } else if (this.isReady()) {
-      this.p.onChildReady(this)
+  class Element {
+    constructor(id, tag, props, ch) {
+      this.id = id
+      this.tag = tag
+      this.props = new Props(this, props)
+      this.ch = new Children(this, ch)
+      this.ref = 0
+      this.p = this.dom = null
+    }
+
+    accepts(node) {
+      return node instanceof Element && this.tag === node.tag
+    }
+
+    start() {
+      if (this.ref++ === 0) {
+        this.props.start()
+        this.ch.start()
+      } else if (this.isReady()) {
+        this.p.onChildReady(this)
+      }
+    }
+
+    stop() {
+      if (--this.ref === 0) {
+        this.ch.stop()
+        this.props.stop()
+      }
+    }
+
+    create() {
+      const dom = this.dom = domApi.createElement(this.tag, this.id)
+      this.props.create(dom)
+      this.ch.create(dom)
+      mount(this)
+      return dom
+    }
+
+    update(prev) {
+      replace(prev, this)
+      const {props, ch, dom} = prev
+      this.dom = dom
+      this.props.update(props, dom)
+      this.ch.update(ch, dom)
+    }
+
+    remove(parentDOM) {
+      domApi.remove(parentDOM, this.dom)
+      this.dom = null
+      this.ch.remove()
+      unmount(this)
+    }
+
+    onChildrenReady() {
+      this.props.isReady() && this.p.onChildReady(this)
+    }
+
+    onPropsReady() {
+      this.ch.isReady() && this.p.onChildReady(this)
+    }
+
+    isReady() {
+      return this.ch.isReady() && this.props.isReady()
+    }
+
+    on(selector, type, capture) {
+      return events.toObs(this.id, selector, type, capture)
     }
   }
 
-  stop() {
-    if (--this.ref === 0) {
-      this.ch.stop()
-      this.props.stop()
-    }
-  }
-
-  create() {
-    const dom = this.dom = createElement(this.tag, this.id)
-    this.props.create(dom)
-    this.ch.create(dom)
-    mount(this)
-    return dom
-  }
-
-  update(prev) {
-    replace(prev, this)
-    const {props, ch, dom} = prev
-    this.dom = dom
-    this.props.update(props, dom)
-    this.ch.update(ch, dom)
-  }
-
-  remove(parentDOM) {
-    remove(parentDOM, this.dom)
-    this.dom = null
-    this.ch.remove()
-    unmount(this)
-  }
-
-  onChildrenReady() {
-    this.props.isReady() && this.p.onChildReady(this)
-  }
-
-  onPropsReady() {
-    this.ch.isReady() && this.p.onChildReady(this)
-  }
-
-  isReady() {
-    return this.ch.isReady() && this.props.isReady()
-  }
+  Element.prototype.static = false
+  Element.prototype.__isNode = true
+  return Element
 }

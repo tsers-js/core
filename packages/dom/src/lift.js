@@ -1,9 +1,8 @@
 import {O} from "@tsers/core"
-import {isVNode, lifted} from "./h"
 import {throws} from "./util"
 
 
-export default (SA) => {
+export default (SA, {newId, Nodes: {Lifted}}) => {
   const convertOut = O.adaptOut(SA)
   const convertIn = O.adaptIn(SA.streamSubscribe)
   const isObs = x => x && SA.isValidStream(x)
@@ -23,9 +22,17 @@ export default (SA) => {
     }
   }
 
+  function lifted(vnode) {
+    return new Lifted(newId(), vnode)
+  }
+
   function liftInner(vnode) {
     !isVNode(vnode) && throws(`Can't lift vnode: ${vnode}`)
     return lifted(vnode)
+  }
+
+  function isVNode(x) {
+    return x && x.__isNode
   }
 }
 

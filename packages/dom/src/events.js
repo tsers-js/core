@@ -2,6 +2,33 @@ import {__, O, defer} from "@tsers/core"
 import matches from "matches-selector"
 
 
+export function make(SA, events) {
+  const out = O.adaptOut(SA)
+
+  return {
+    toObs,
+    toEmptyObs
+  }
+
+  function toObs(nodeId, selector, type, capture) {
+    // TODO: resolve capture!
+    capture = false
+    const stream =
+      O.switchLatest(O.create(({next}) => {
+        const {uid, stream} = events.add(nodeId, selector, type, capture)
+        next(stream)
+        return () => {
+          events.remove(nodeId, type, capture, uid)
+        }
+      }))
+    return out(O.multicast(stream))
+  }
+
+  function toEmptyObs() {
+    return out(O.never())
+  }
+}
+
 export class Events {
   constructor() {
     this.s = O.Adapter.makeSubject()
@@ -56,21 +83,6 @@ export class Events {
     }
   }
 }
-
-export function makeEventListener(events, id, selector, type, capture) {
-  // TODO: resolve capture!
-  capture = false
-  const stream =
-    O.switchLatest(O.create(({next}) => {
-      const {uid, stream} = events.add(id, selector, type, capture)
-      next(stream)
-      return () => {
-        events.remove(id, type, capture, uid)
-      }
-    }))
-  return O.multicast(stream)
-}
-
 
 class Listener {
   constructor(events, type, capture) {
