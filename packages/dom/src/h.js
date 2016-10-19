@@ -112,7 +112,7 @@ export function isVNode(x) {
 }
 
 export function lifted(vnode) {
-  return {_: VNODE, t: LIFTED, n: vnode}
+  return {id: newId(), _: VNODE, t: LIFTED, n: vnode}
 }
 
 function isStatic(vnode) {

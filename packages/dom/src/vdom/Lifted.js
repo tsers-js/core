@@ -2,7 +2,8 @@ import {create} from "./index"
 
 
 export default class Lifted {
-  constructor({n: vnode}, parent) {
+  constructor({id, n: vnode}, parent) {
+    this.id = id
     this.p = parent
     this.n = create(vnode, this)
   }
