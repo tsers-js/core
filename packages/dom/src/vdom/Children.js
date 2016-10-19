@@ -71,8 +71,8 @@ class Combine {
 
   start() {
     if (this.n) {
-      this.d = startMods(this.m, this)
       startNodes(this.v)
+      this.d = startMods(this.m, this)
     } else {
       this.ch.onChildren(this.v)
     }
