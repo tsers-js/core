@@ -30,3 +30,11 @@ export function createElement(tag, id) {
 export function createText(text) {
   return document.createTextNode(text)
 }
+
+export function createFragment() {
+  return document.createDocumentFragment()
+}
+
+export function appendFragment(parent, fragment) {
+  append(parent, fragment)
+}

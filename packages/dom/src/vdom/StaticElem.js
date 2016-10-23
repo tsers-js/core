@@ -67,9 +67,11 @@ export default ({link, mount, unmount, replace, domApi, patch: {patchProps, patc
   }
 
   function mountNodes(nodes, dom) {
+    const fragment = domApi.createFragment()
     for (let i = 0, n = nodes.length; i < n; ++i) {
-      domApi.append(dom, nodes[i].create())
+      fragment.appendChild(nodes[i].create())
     }
+    domApi.appendFragment(dom, fragment)
   }
 
   StaticElement.prototype.static = true

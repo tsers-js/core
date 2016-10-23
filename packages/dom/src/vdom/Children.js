@@ -23,9 +23,11 @@ export default ({link, domApi, patch: {patchChildAt, patchChildren}}) => {
 
     create(parentDOM) {
       let {v: nodes} = this, n = nodes.length, i = 0
+      const fragment = domApi.createFragment()
       while (i < n) {
-        domApi.append(parentDOM, nodes[i++].create())
+        fragment.appendChild(nodes[i++].create())
       }
+      domApi.appendFragment(parentDOM, fragment)
     }
 
     update({v: prev}, parentDOM) {
