@@ -4,8 +4,6 @@ export const O = Obs
 
 export {default as curry} from "./curry"
 
-export {default as mapIds} from "./mapIds"
-
 export {
   isFun,
   isDef,
