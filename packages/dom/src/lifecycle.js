@@ -1,4 +1,4 @@
-export default ({}) => {
+export default () => {
   // TODO: implement non-ES6 compatible version with objects
   const cache = new Map()
   window._cache = cache
