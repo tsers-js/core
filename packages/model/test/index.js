@@ -94,7 +94,7 @@ describe("Model Driver", () => {
 
     it("creates sinks for each key", () => {
       const model = Model([{id: "1"}, {id: "2"}])(O.never(), O.Adapter)
-      const children = model.mapChildrenById(Child, ["Foo", "Bar"], ["Lol"])
+      const children = model.mapChildren(Child, ["Foo", "Bar"], ["Lol"])
       isObj(children).should.be.true()
       keys(children).length.should.eql(3)
       O.is(children.Foo).should.be.true()
@@ -104,8 +104,8 @@ describe("Model Driver", () => {
 
     it("combines value sinks of children over time", done => {
       const foo = run([{id: "a"}, {id: "b"}], model => {
-        const children = model.mapChildrenById(Child, ["Eff"], ["DOM"])
-        const expected = [["a-1d", "b-1d"], ["a-1d", "b-2d"], ["a-2d", "b-2d"]]
+        const children = model.mapChildren(Child, ["Eff"], ["DOM"])
+        const expected = [["a-1d", "b-1d"], ["a-2d", "b-1d"], ["a-2d", "b-2d"]]
         __(children.DOM.take(3), subscribeAndExpect(expected, done))
         return [model, O.empty()]
       })
@@ -114,8 +114,8 @@ describe("Model Driver", () => {
 
     it("merges event sinks from children", done => {
       const foo = run([{id: "a"}, {id: "b"}], model => {
-        const children = model.mapChildrenById(Child, ["Eff"], ["DOM"])
-        const expected = ["b-1e", "a-1e", "b-2e", "a-2e"]
+        const children = model.mapChildren(Child, ["Eff"], ["DOM"])
+        const expected = ["a-1e", "b-1e", "a-2e", "b-2e"]
         __(children.Eff.take(4), subscribeAndExpect(expected, done))
         return [model, O.empty()]
       })
@@ -124,11 +124,11 @@ describe("Model Driver", () => {
 
     it("preserves the underlying subscriptions even if children change", done => {
       const foo = run([{id: "a"}, {id: "b"}], model => {
-        const children = model.mapChildrenById(Child, ["Eff"], ["DOM"])
+        const children = model.mapChildren(Child, ["Eff"], ["DOM"])
         const expected = [
           ["a-1d", "b-1d"],
           ["a-1d", "b-1d", "c-1d"],
-          ["a-1d", "b-2d", "c-1d"],
+          ["a-2d", "b-1d", "c-1d"],
           ["a-2d", "b-2d", "c-1d"],
           ["a-2d", "b-2d", "c-2d"]
         ]

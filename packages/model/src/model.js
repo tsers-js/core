@@ -1,5 +1,6 @@
-import {__, O, pipe, mapIds, throws, isArray, keys, always} from "@tsers/core"
-import lift, {get, comp, find, prop} from "./lenses"
+import {__, O, pipe, keys, always, extend} from "@tsers/core"
+import lift, {get, comp, find} from "./lenses"
+import {MapChildrenSource, CycleSinkExtractSource} from "./children"
 
 
 export default (SA, Mod, equality) => {
@@ -14,7 +15,6 @@ export default (SA, Mod, equality) => {
   const toValue = pipe(skipDups, O.hold)
 
   function Model(value, rootLens) {
-
     function select(selector) {
       const lens = lift(selector)
       return Model(toValue(O.map(v => get(lens, v), value)), comp(rootLens, lens))
@@ -28,88 +28,63 @@ export default (SA, Mod, equality) => {
       return __(convertIn(reducers), O.map(toMod(rootLens)), convertOut)
     }
 
-    function mapChildren(ident, fn, eventSinks = ["Model"], valueSinks = ["DOM"]) {
-      const indexed = __(value,
-        O.map(items => {
-          !isArray(items) && throws(`mapChildren requires that the mapped value is an array, instead got ${typeof items}`)
-          let i = items.length, list = Array(i), index = {}, it
-          while (i--) {
-            it = items[i]
-            index[list[i] = str(ident(it))] = it
-          }
-          return {list, index}
-        }),
-        O.hold)
+    function mapChildrenBy(identityFn, fn, eventSinks = ["Model"], valueSinks = ["DOM"]) {
+      // make sure identity is string type
+      const ident = pipe(identityFn, str)
 
-      return extract(eventSinks, valueSinks, mapIds(id => {
-        const sid = str(id)
-        const wl = find(it => it && str(ident(it)) === sid)
-        const rl = comp(prop("index"), prop(sid))
-        const item = toValue(O.map(items => get(rl, items), indexed))
-        return new Child(fn(Model(item, comp(rootLens, wl)), sid), eventSinks, valueSinks)
-      }, indexed))
+      // augment transform function so that it converts output item stream to
+      // model and converts returned cycle sinks (from app) back to internal streams
+      const childFn = (item, key) => {
+        const itemValue = outValue(item)
+        const itemLens = find(it => ident(it) === key)
+        const itemModel = Model(itemValue, comp(rootLens, itemLens))
+        return cycleSinksToInternal(fn(itemModel, key))
+      }
+
+      // create custom MapChildren source that does the list state management,
+      // calls childFn function every time when new item is added to the observed
+      // list and is compatible with child value extraction
+      const mcSource = new MapChildrenSource(value.source, ident, childFn, valueSinks, eventSinks)
+      // create output sinks by extracting them by their key from the map children source
+      const events = extract(mcSource, eventSinks, pipe(O.multicast, convertOut), false)
+      const values = extract(mcSource, valueSinks, pipe(O.hold, outValue), true)
+      return extend({}, events, values)
     }
 
-    function mapChildrenById(fn, eventSinks, valueSinks) {
-      return mapChildren(it => it.id, fn, eventSinks, valueSinks)
+    function mapChildren(fn, eventSinks, valueSinks) {
+      return mapChildrenBy(it => it.id, fn, eventSinks, valueSinks)
     }
 
     return {
       value: outValue(value),
       select, set, update,
-      mapChildren, mapChildrenById
+      mapChildrenBy, mapChildren
     }
   }
 
-  function extract(eventSinks, valueSinks, children) {
+  function extract(mapChildrenSource, sinkNames, toOutput, isValue) {
     const extracted = {}
-    extractWith(extracted, eventSinks, children, O.merge, pipe(O.multicast, convertOut))
-    extractWith(extracted, valueSinks, children, O.combine, outValue)
+    for (let i = 0, n = sinkNames.length; i < n; i++) {
+      const name = sinkNames[i]
+      const stream = O.fromSource(new CycleSinkExtractSource(mapChildrenSource, name, isValue))
+      extracted[name] = toOutput(stream)
+    }
     return extracted
   }
 
-  function extractWith(target, sinks, children, fnInner, fnOuter) {
-    sinks.forEach(key => {
-      target[key] = __(children,
-        O.map(ch => {
-          const nc = ch.length, extracted = Array(nc)
-          for (let j = 0; j < nc; j++) {
-            extracted[j] = ch[j].s[key]
-          }
-          return fnInner(extracted)
-        }),
-        O.switchLatest,
-        fnOuter)
-    })
+  function cycleSinksToInternal(sinks) {
+    const internal = {}
+    let k = keys(sinks), i = k.length
+    while (i--) {
+      const name = k[i]
+      internal[name] = convertIn(sinks[name])
+    }
+    return internal
   }
 
-  function Child(sinks, eventSinks, valueSinks) {
-    const s = this.s = {}
-    const d = this.d = {}
-    for (let i = 0, n = eventSinks.length; i < n; i++) {
-      const key = eventSinks[i]
-      const sink = s[key] = sinks[key] ? O.multicast(convertIn(sinks[key])) : O.never()
-      d[key] = O.subscribe({}, sink)
-    }
-    for (let i = 0, n = valueSinks.length; i < n; i++) {
-      const key = valueSinks[i]
-      const sink = s[key] = sinks[key] ? O.hold(convertIn(sinks[key])) : O.of(undefined)
-      d[key] = O.subscribe({}, sink)
-    }
-  }
-
-  Child.prototype.dispose = function () {
-    const {d} = this
-    this.d = this.s = null
-    keys(d).forEach(key => {
-      const dispose = d[key]
-      dispose()
-    })
-  }
 
   return Model
 }
-
 
 function str(x) {
   return `${x}`

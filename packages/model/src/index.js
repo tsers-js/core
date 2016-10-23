@@ -40,10 +40,10 @@ function defaultEquality(a, b) {
 
 function defaultWarn() {
   const args = Array.prototype.slice.call(arguments)
-  console.warn(args)      // eslint-disable-line
+  console.warn.apply(null, args)      // eslint-disable-line
 }
 
 function defaultError() {
   const args = Array.prototype.slice.call(arguments)
-  console.error(args)     // eslint-disable-line
+  console.error.apply(null, args)     // eslint-disable-line
 }
