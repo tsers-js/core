@@ -5,6 +5,7 @@ export default ({link}) => {
       this.n = link(vnode, this)
       this.static = this.n.static
       this.p = null
+      this.dom = null
     }
 
     accepts(node) {
@@ -24,16 +25,18 @@ export default ({link}) => {
     }
 
     create() {
-      const dom = this.n.create()
+      const dom = this.dom = this.n.create()
       dom.__scope_end = true
       return dom
     }
 
     update(prev) {
+      this.dom = prev.dom
       this.n.update(prev.n)
     }
 
     remove(parentDOM) {
+      this.dom = null
       this.n.remove(parentDOM)
     }
 
