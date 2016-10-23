@@ -56,6 +56,10 @@ export const create = curry(f => mcreate((next, complete, error) => {
   return f({next, complete, error})
 }))
 
+export const fromSource = source => {
+  return new Stream(source);
+}
+
 export const subscribe = curry((obs, s) => {
   const subs = s.subscribe(obs)
   return () => subs.unsubscribe()
